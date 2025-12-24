@@ -41,7 +41,7 @@ export default function useProdutoPage() {
       .get("/catalogo")
       .then((res) => {
         console.log("✅ Catálogo recebido:", res.data);
-        const list =
+        const list: Produto[] =
           res.data?.dados?.produtos?.map((p: Produto) => ({
             ...p,
             imagem: getImagemUrl(p.imagem),
@@ -50,9 +50,14 @@ export default function useProdutoPage() {
 
         setProdutos(list);
 
-        const cats = Array.from(
-          new Set(list.map((p) => p.categoria_nome).filter(Boolean))
-        ) as string[];
+        // Tipagem corrigida
+        const cats: string[] = Array.from(
+          new Set(
+            list
+              .map((p: Produto) => p.categoria_nome)
+              .filter((nome): nome is string => Boolean(nome))
+          )
+        );
 
         setCategorias(cats);
       })
@@ -63,6 +68,7 @@ export default function useProdutoPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  // 🔹 USUÁRIO LOGADO
   useEffect(() => {
     console.log("👤 Verificando usuário logado...");
 
@@ -70,8 +76,7 @@ export default function useProdutoPage() {
       .get("/me")
       .then((res) => {
         console.log("✅ Resposta /me:", res.data);
-
-        const id = res.data?.dados?.usuario?.id;
+        const id: number | undefined = res.data?.dados?.usuario?.id;
 
         if (id) {
           console.log("🆔 Usuário autenticado ID:", id);
@@ -97,7 +102,7 @@ export default function useProdutoPage() {
     localStorage.setItem("favoritos", JSON.stringify(produtosFavoritos));
   }, [produtosFavoritos]);
 
-  // 🔹 ADICIONAR AO CARRINHO (DEBUG TOTAL)
+  // 🔹 ADICIONAR AO CARRINHO
   const adicionarAoCarrinho = async (produto: Produto, quantidade = 1) => {
     console.group("🛒 ADICIONAR AO CARRINHO");
     console.log("Produto:", produto);
@@ -116,20 +121,15 @@ export default function useProdutoPage() {
         usuarioId,
         produtoId: produto.id_produto,
         quantidade,
-        precoUnitario: Number(produto.preco), // ✅ CORREÇÃO CRÍTICA
+        precoUnitario: Number(produto.preco),
       };
 
       console.log("📤 Payload enviado:", payload);
-
       const res = await api.post("/carrinho/adicionar", payload);
-
       console.log("✅ Resposta carrinho:", res.data);
       toast.success(`${produto.nome} adicionado ao carrinho!`);
     } catch (err: any) {
-      console.error(
-        "❌ Erro ao adicionar ao carrinho:",
-        err.response?.data || err
-      );
+      console.error("❌ Erro ao adicionar ao carrinho:", err.response?.data || err);
       toast.error("Erro ao adicionar ao carrinho.");
     } finally {
       console.groupEnd();
