@@ -1,24 +1,17 @@
-"use client";
+'use client';
 
 import Link from "next/link";
 import api from "@/Api/conectar";
 import { useProdutoDestaque } from "@/hooks/produto/useProdutoDestaque";
 import { Star, ShoppingCart, Eye, Sparkles, ArrowRight } from "lucide-react";
 
-// Função para construir a URL da imagem
-export const getImagemUrl = (caminho?: string) => {
-  if (!caminho) return undefined;
-
+const getImagemUrl = (caminho?: string) => {
+  if (!caminho) return "/placeholder.png";
   const base = api.defaults.baseURL || "";
-
-  // Remove barras duplicadas no início do caminho
-  const caminhoLimpo = caminho.replace(/^\/+/, "");
-
-  // Garante que a base termine com barra
-  const baseFinal = base.endsWith("/") ? base : `${base}/`;
-
-  return `${baseFinal}${caminhoLimpo}`;
+  // Garante barra entre baseURL e caminho
+  return `${base.replace(/\/+$/, "")}/${caminho.replace(/^\/+/, "")}`;
 };
+
 
 export default function ProdutoDestaque() {
   const { destaques, loading, error } = useProdutoDestaque();
@@ -32,6 +25,7 @@ export default function ProdutoDestaque() {
   return (
     <section className="container my-5 vitrine-wrapper">
       <div className="row g-4">
+
         {/* ===== MINI BANNER ===== */}
         <div className="col-lg-3 col-md-4">
           <div className="mini-banner">
@@ -40,8 +34,7 @@ export default function ProdutoDestaque() {
             </div>
             <h3>Destaques da Loja</h3>
             <p>
-              Produtos selecionados com alto padrão, elegância e excelente
-              custo-benefício.
+              Produtos selecionados com alto padrão, elegância e excelente custo-benefício.
             </p>
             <div className="linha-decorativa" />
           </div>
@@ -53,6 +46,7 @@ export default function ProdutoDestaque() {
             {vitrine.map((item) => (
               <div key={item.id_destaque} className="col-6 col-md-4 col-lg-3">
                 <div className="produto-card">
+
                   {/* Faixa de destaque */}
                   <div className="faixa">
                     <Star size={14} />
@@ -84,10 +78,7 @@ export default function ProdutoDestaque() {
                       </span>
 
                       <div className="acoes">
-                        <Link
-                          href={`/produto/${item.produto_slug}`}
-                          className="icon-btn eye"
-                        >
+                        <Link href={`/produto/${item.produto_slug}`} className="icon-btn eye">
                           <Eye size={16} />
                         </Link>
 
@@ -97,6 +88,7 @@ export default function ProdutoDestaque() {
                       </div>
                     </div>
                   </div>
+
                 </div>
               </div>
             ))}
@@ -136,17 +128,13 @@ export default function ProdutoDestaque() {
         }
 
         .mini-banner::after {
-          content: "";
+          content: '';
           position: absolute;
           top: -25%;
           left: -25%;
           width: 150%;
           height: 150%;
-          background: radial-gradient(
-            circle,
-            rgba(255, 255, 255, 0.1) 0%,
-            transparent 70%
-          );
+          background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
           transform: rotate(30deg);
         }
 
@@ -157,7 +145,7 @@ export default function ProdutoDestaque() {
           display: flex;
           align-items: center;
           justify-content: center;
-          background: rgba(255, 255, 255, 0.2);
+          background: rgba(255,255,255,0.2);
           border-radius: 16px;
         }
 
@@ -183,20 +171,20 @@ export default function ProdutoDestaque() {
 
         /* ===== CARD ===== */
         .produto-card {
-          background: rgba(255, 255, 255, 0.07);
+          background: rgba(255,255,255,0.07);
           backdrop-filter: blur(16px);
           -webkit-backdrop-filter: blur(16px);
           border-radius: 24px;
           overflow: hidden;
           height: 100%;
-          box-shadow: 0 12px 35px rgba(0, 0, 0, 0.12);
+          box-shadow: 0 12px 35px rgba(0,0,0,0.12);
           transition: all 0.35s ease, transform 0.35s ease;
           position: relative;
         }
 
         .produto-card:hover {
           transform: translateY(-6px) scale(1.03);
-          box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+          box-shadow: 0 20px 50px rgba(0,0,0,0.2);
         }
 
         .faixa {
@@ -225,17 +213,10 @@ export default function ProdutoDestaque() {
         }
 
         .produto-img::after {
-          content: "";
+          content: '';
           position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background: linear-gradient(
-            135deg,
-            rgba(255, 255, 255, 0.08),
-            transparent
-          );
+          top: 0; left: 0; width: 100%; height: 100%;
+          background: linear-gradient(135deg, rgba(255,255,255,0.08), transparent);
           pointer-events: none;
         }
 
@@ -299,11 +280,11 @@ export default function ProdutoDestaque() {
         }
 
         .icon-btn.eye {
-          background: rgba(17, 24, 39, 0.85);
+          background: rgba(17,24,39,0.85);
         }
 
         .icon-btn.eye:hover {
-          background: rgba(17, 24, 39, 1);
+          background: rgba(17,24,39,1);
         }
 
         .icon-btn.cart {

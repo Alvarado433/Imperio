@@ -1,10 +1,9 @@
-'use client';
+"use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import api from "@/Api/conectar";
 import { toast, ToastContainer } from "react-toastify";
-import 'react-toastify/dist/ReactToastify.css';
+import "react-toastify/dist/ReactToastify.css";
 
 interface Status {
   id_status: number;
@@ -13,40 +12,55 @@ interface Status {
 }
 
 export default function NovoBannerPage() {
-  const router = useRouter();
+  const [step, setStep] = useState<1 | 2>(1);
 
   const [titulo, setTitulo] = useState("");
   const [descricao, setDescricao] = useState("");
   const [link, setLink] = useState("");
   const [imagem, setImagem] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+
   const [status, setStatus] = useState<Status[]>([]);
   const [statusId, setStatusId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
 
+  // ===============================
+  // STATUS
+  // ===============================
   useEffect(() => {
-    api.get("/admin/status").then(res => {
-      setStatus(res.data.dados || []);
-      const ativo = res.data.dados?.find((s: Status) => s.codigo === "ATIVO");
-      if (ativo) setStatusId(ativo.id_status);
-    });
+    api.get("/admin/status")
+      .then(res => {
+        setStatus(res.data.dados || []);
+        const ativo = res.data.dados?.find((s: Status) => s.codigo === "ativo");
+        if (ativo) setStatusId(ativo.id_status);
+      })
+      .catch(() => toast.error("Erro ao carregar status"));
   }, []);
 
+  // ===============================
+  // PREVIEW IMAGE
+  // ===============================
   useEffect(() => {
-    if (!imagem) return setPreview(null);
+    if (!imagem) {
+      setPreview(null);
+      return;
+    }
     const url = URL.createObjectURL(imagem);
     setPreview(url);
     return () => URL.revokeObjectURL(url);
   }, [imagem]);
 
-  async function salvarBanner(e: React.FormEvent) {
-    e.preventDefault();
+  // ===============================
+  // SALVAR
+  // ===============================
+  async function salvarBanner() {
     if (!titulo || !imagem || !statusId) {
       toast.error("Preencha os campos obrigatórios");
       return;
     }
 
     setLoading(true);
+
     try {
       const form = new FormData();
       form.append("titulo", titulo);
@@ -55,161 +69,240 @@ export default function NovoBannerPage() {
       form.append("statusid", String(statusId));
       form.append("imagem", imagem);
 
-      await api.post("/admin/banner/criar", form);
-      toast.success("Banner criado");
-      router.push("/admin/banners");
-    } catch {
-      toast.error("Erro ao salvar banner");
+      await api.post("/admin/banner/criar", form, {
+        headers: { "Content-Type": "multipart/form-data" }
+      });
+
+      toast.success("Banner criado com sucesso");
+
+      setStep(1);
+      setTitulo("");
+      setDescricao("");
+      setLink("");
+      setImagem(null);
+      setPreview(null);
+
+    } catch (err: any) {
+      toast.error(err.response?.data?.mensagem || "Erro ao salvar banner");
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="painel-page">
+    <div className="page">
       <ToastContainer />
 
-      <div className="painel-header">
+      <header className="header">
         <h1>Novo Banner</h1>
-        <button onClick={() => router.back()}>Voltar</button>
+        <p>Crie banners principais da sua loja</p>
+      </header>
+
+      {/* STEPS */}
+      <div className="steps">
+        <div className={`step ${step === 1 ? "active" : ""}`}>Informações</div>
+        <div className={`step ${step === 2 ? "active" : ""}`}>Preview & Imagem</div>
       </div>
 
-      <form onSubmit={salvarBanner} className="painel-grid">
+      <div className="layout">
         {/* FORM */}
-        <div className="painel-card">
-          <label>Título</label>
-          <input value={titulo} onChange={e => setTitulo(e.target.value)} />
+        <div className="card">
+          {step === 1 && (
+            <>
+              <div className="grid">
+                <div>
+                  <label>Título *</label>
+                  <input value={titulo} onChange={e => setTitulo(e.target.value)} />
+                </div>
 
-          <label>Descrição</label>
-          <textarea
-            rows={3}
-            value={descricao}
-            onChange={e => setDescricao(e.target.value)}
-          />
+                <div>
+                  <label>Status *</label>
+                  <select
+                    value={statusId ?? ""}
+                    onChange={e => setStatusId(Number(e.target.value))}
+                  >
+                    <option value="">Selecione</option>
+                    {status.map(s => (
+                      <option key={s.id_status} value={s.id_status}>
+                        {s.nome}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-          <label>Link</label>
-          <input
-            placeholder="https://..."
-            value={link}
-            onChange={e => setLink(e.target.value)}
-          />
+                <div>
+                  <label>Link</label>
+                  <input value={link} onChange={e => setLink(e.target.value)} />
+                </div>
 
-          <label>Status</label>
-          <select
-            value={statusId ?? ""}
-            onChange={e => setStatusId(Number(e.target.value))}
-          >
-            <option value="">Selecione</option>
-            {status.map(s => (
-              <option key={s.id_status} value={s.id_status}>
-                {s.nome}
-              </option>
-            ))}
-          </select>
+                <div>
+                  <label>Descrição</label>
+                  <input value={descricao} onChange={e => setDescricao(e.target.value)} />
+                </div>
+              </div>
 
-          <label>Imagem</label>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={e => setImagem(e.target.files?.[0] || null)}
-          />
+              <div className="actions">
+                <button
+                  className="primary"
+                  disabled={!titulo || !statusId}
+                  onClick={() => setStep(2)}
+                >
+                  Próximo
+                </button>
+              </div>
+            </>
+          )}
 
-          <button disabled={loading}>
-            {loading ? "Salvando..." : "Salvar Banner"}
-          </button>
+          {step === 2 && (
+            <>
+              <label>Imagem do Banner *</label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={e => setImagem(e.target.files?.[0] || null)}
+              />
+
+              <div className="actions space">
+                <button onClick={() => setStep(1)}>Voltar</button>
+                <button className="primary" onClick={salvarBanner} disabled={loading}>
+                  {loading ? "Salvando..." : "Salvar Banner"}
+                </button>
+              </div>
+            </>
+          )}
         </div>
 
-        {/* PREVIEW */}
-        <div className="painel-card preview-card">
+        {/* PREVIEW REAL */}
+        <div className="preview-card">
           <div className="banner-preview">
             {preview ? (
-              <img src={preview} />
+              <>
+                <img src={preview} />
+                <div className="overlay">
+                  <h2>{titulo || "Título do Banner"}</h2>
+                  <p>{descricao || "Descrição do banner aparece aqui"}</p>
+                </div>
+              </>
             ) : (
               <span>Preview do banner</span>
             )}
-            <div className="overlay">
-              <h3>{titulo || "Título do banner"}</h3>
-              {descricao && <p>{descricao}</p>}
-            </div>
           </div>
         </div>
-      </form>
+      </div>
 
       <style jsx global>{`
-        .painel-page {
-          background: #f3f4f6;
-          padding: 28px;
+        .page {
+          background: #f4f6f8;
           min-height: 100vh;
+          padding: 40px;
         }
 
-        .painel-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
+        .header h1 {
+          font-size: 28px;
+        }
+
+        .header p {
+          color: #6b7280;
           margin-bottom: 24px;
         }
 
-        .painel-header h1 {
-          font-size: 22px;
-          font-weight: 700;
-        }
-
-        .painel-header button {
-          background: #fff;
-          border: 1px solid #ddd;
-          padding: 8px 14px;
-          border-radius: 8px;
-        }
-
-        .painel-grid {
-          display: grid;
-          grid-template-columns: 1.1fr .9fr;
-          gap: 24px;
-        }
-
-        .painel-card {
-          background: #fff;
-          border-radius: 14px;
-          padding: 20px;
-          box-shadow: 0 8px 20px rgba(0,0,0,.06);
+        .steps {
           display: flex;
-          flex-direction: column;
           gap: 12px;
+          margin-bottom: 20px;
+          max-width: 1100px;
         }
 
-        .painel-card label {
-          font-size: 13px;
+        .step {
+          flex: 1;
+          padding: 12px;
+          border-radius: 12px;
+          background: #e5e7eb;
+          text-align: center;
           font-weight: 600;
         }
 
-        .painel-card input,
-        .painel-card textarea,
-        .painel-card select {
-          border: 1px solid #ddd;
-          border-radius: 8px;
-          padding: 10px;
-        }
-
-        .painel-card button {
-          margin-top: 10px;
+        .step.active {
           background: #111827;
           color: #fff;
-          border: none;
-          padding: 12px;
-          border-radius: 10px;
+        }
+
+        .layout {
+          display: grid;
+          grid-template-columns: 420px 1fr;
+          gap: 24px;
+          max-width: 1100px;
+        }
+
+        .card {
+          background: #fff;
+          border-radius: 18px;
+          padding: 24px;
+          box-shadow: 0 12px 30px rgba(0,0,0,.08);
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+        }
+
+        .grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 14px;
+        }
+
+        label {
+          font-size: 13px;
           font-weight: 600;
+          margin-bottom: 4px;
+          display: block;
+        }
+
+        input, select {
+          width: 100%;
+          border: 1px solid #ddd;
+          border-radius: 12px;
+          padding: 12px;
+        }
+
+        .actions {
+          display: flex;
+          justify-content: flex-end;
+        }
+
+        .actions.space {
+          justify-content: space-between;
+        }
+
+        button {
+          padding: 12px 18px;
+          border-radius: 14px;
+          border: none;
+          font-weight: 600;
+          background: #e5e7eb;
+          cursor: pointer;
+        }
+
+        button.primary {
+          background: #111827;
+          color: #fff;
         }
 
         .preview-card {
-          padding: 0;
-          overflow: hidden;
+          background: #fff;
+          border-radius: 18px;
+          padding: 12px;
+          box-shadow: 0 12px 30px rgba(0,0,0,.08);
         }
 
         .banner-preview {
           position: relative;
-          height: 100%;
-          min-height: 280px;
+          height: 320px;
+          border-radius: 14px;
+          overflow: hidden;
           background: #e5e7eb;
+          display: flex;
+          align-items: center;
+          justify-content: center;
         }
 
         .banner-preview img {
@@ -218,43 +311,29 @@ export default function NovoBannerPage() {
           object-fit: cover;
         }
 
-        .banner-preview span {
-          display: flex;
-          height: 100%;
-          align-items: center;
-          justify-content: center;
-          color: #6b7280;
-        }
-
         .overlay {
           position: absolute;
           inset: 0;
-          padding: 18px;
+          background: linear-gradient(
+            to right,
+            rgba(0,0,0,.55),
+            rgba(0,0,0,.15)
+          );
+          color: #fff;
+          padding: 32px;
           display: flex;
           flex-direction: column;
-          justify-content: flex-end;
-          background: linear-gradient(
-            to top,
-            rgba(0,0,0,.6),
-            rgba(0,0,0,.05)
-          );
+          justify-content: center;
+          max-width: 60%;
         }
 
-        .overlay h3 {
-          color: #fff;
-          font-size: 18px;
-          margin: 0;
+        .overlay h2 {
+          font-size: 26px;
+          margin-bottom: 6px;
         }
 
         .overlay p {
-          font-size: 13px;
-          color: #e5e7eb;
-        }
-
-        @media (max-width: 900px) {
-          .painel-grid {
-            grid-template-columns: 1fr;
-          }
+          opacity: .9;
         }
       `}</style>
     </div>

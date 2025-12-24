@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import api from '@/Api/conectar';
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { useEffect, useState } from "react";
+import api from "@/Api/conectar";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 interface Produto {
   id_produto: number;
@@ -18,8 +18,8 @@ interface Produto {
 
 const getImagemUrl = (caminho?: string) => {
   if (!caminho) return undefined;
-  const base = api.defaults.baseURL || '';
-  return `${base}${caminho.replace(/^\/+/, '')}`;
+  const base = api.defaults.baseURL || "";
+  return `${base}${caminho.replace(/^\/+/, "")}`;
 };
 
 export default function CatalogoPage() {
@@ -30,10 +30,11 @@ export default function CatalogoPage() {
 
   const fetchProdutos = async () => {
     try {
-      const res = await api.get('/admin/produtos/catalogo');
-      setProdutos(res.data.dados || []);
-    } catch {
-      toast.error('Erro ao carregar produtos');
+      const res = await api.get("/admin/produtos/catalogo");
+      setProdutos(res.data?.dados || []);
+    } catch (err: any) {
+      console.error(err);
+      toast.error("Erro ao carregar produtos");
     } finally {
       setLoading(false);
     }
@@ -47,20 +48,15 @@ export default function CatalogoPage() {
     try {
       if (produto.catalogo === 6) {
         await api.put(`/admin/produtos/${produto.id_produto}/catalogo/sim`);
-        toast.success('Publicado no catálogo');
+        toast.success("Produto publicado");
       } else {
         await api.put(`/admin/produtos/${produto.id_produto}/catalogo/nao`);
-        toast.success('Removido do catálogo');
+        toast.info("Produto removido");
       }
       fetchProdutos();
     } catch {
-      toast.error('Erro ao atualizar catálogo');
+      toast.error("Erro ao atualizar catálogo");
     }
-  };
-
-  const verProduto = (produto: Produto) => {
-    if (!produto.slug) return toast.info('Produto sem página');
-    window.open(`/produto/${produto.slug}`, '_blank');
   };
 
   const totalPaginas = Math.ceil(produtos.length / itensPorPagina);
@@ -69,77 +65,73 @@ export default function CatalogoPage() {
     paginaAtual * itensPorPagina
   );
 
-  if (loading) return <div className="p-4">Carregando...</div>;
+  if (loading) return <div className="loading">Carregando catálogo...</div>;
 
   return (
-    <div className="catalogo-bg container-fluid py-4">
+    <div className="catalogo-wrapper">
       <ToastContainer />
 
-      <h1 className="page-title">Gestão de Catálogo</h1>
-      <p className="page-subtitle">Publicação de produtos no site</p>
+      <h1 className="title">Gestão de Catálogo</h1>
+      <p className="subtitle">Publicação de produtos no site</p>
 
       {produtos.length === 0 ? (
-        <p className="text-center text-muted">Nenhum produto encontrado</p>
+        <p className="empty">Nenhum produto encontrado</p>
       ) : (
         <>
-          <div className="row g-4 mt-2">
-            {produtosPagina.map(produto => (
-              <div key={produto.id_produto} className="col-12 col-md-6 col-xl-4">
-                <div className="produto-card">
+          <div className="grid">
+            {produtosPagina.map((produto) => (
+              <div key={produto.id_produto} className="card">
+                <div className="image-box">
+                  {produto.imagem ? (
+                    <img src={getImagemUrl(produto.imagem)} alt={produto.nome} />
+                  ) : (
+                    <span className="no-image">Sem imagem</span>
+                  )}
 
-                  {/* IMAGEM */}
-                  <div className="img-wrapper">
-                    {produto.imagem ? (
-                      <img src={getImagemUrl(produto.imagem)} alt={produto.nome} />
-                    ) : (
-                      <span className="img-placeholder">Sem imagem</span>
-                    )}
+                  <span
+                    className={`badge ${
+                      produto.catalogo === 5 ? "on" : "off"
+                    }`}
+                  >
+                    {produto.catalogo === 5 ? "Publicado" : "Oculto"}
+                  </span>
+                </div>
 
-                    <span
-                      className={`status-badge ${
-                        produto.catalogo === 5 ? 'on' : 'off'
-                      }`}
-                    >
-                      {produto.catalogo === 5 ? 'Publicado' : 'Oculto'}
+                <div className="content">
+                  <h3>{produto.nome}</h3>
+                  <small>{produto.categoria_nome || "Sem categoria"}</small>
+
+                  <div className="info">
+                    <span>
+                      Preço
+                      <strong>R$ {Number(produto.preco).toFixed(2)}</strong>
+                    </span>
+                    <span>
+                      Estoque
+                      <strong>{produto.estoque}</strong>
                     </span>
                   </div>
 
-                  {/* CONTEÚDO */}
-                  <div className="card-content">
-                    <h5>{produto.nome}</h5>
+                  <div className="actions">
+                    <button
+                      className={`btn ${
+                        produto.catalogo === 6 ? "success" : "danger"
+                      }`}
+                      onClick={() => toggleCatalogo(produto)}
+                    >
+                      {produto.catalogo === 6 ? "Publicar" : "Remover"}
+                    </button>
 
-                    <span className="categoria">
-                      {produto.categoria_nome || 'Sem categoria'}
-                    </span>
-
-                    <div className="info">
-                      <span>
-                        Preço
-                        <strong>R$ {Number(produto.preco).toFixed(2)}</strong>
-                      </span>
-                      <span>
-                        Estoque
-                        <strong>{produto.estoque}</strong>
-                      </span>
-                    </div>
-
-                    <div className="acoes">
-                      <button
-                        className={`btn ${
-                          produto.catalogo === 6 ? 'btn-success' : 'btn-danger'
-                        }`}
-                        onClick={() => toggleCatalogo(produto)}
-                      >
-                        {produto.catalogo === 6 ? 'Publicar' : 'Remover'}
-                      </button>
-
-                      <button
-                        className="btn btn-outline"
-                        onClick={() => verProduto(produto)}
-                      >
-                        Ver Página
-                      </button>
-                    </div>
+                    <button
+                      className="btn outline"
+                      onClick={() =>
+                        produto.slug
+                          ? window.open(`/produto/${produto.slug}`, "_blank")
+                          : toast.info("Produto sem página")
+                      }
+                    >
+                      Ver Página
+                    </button>
                   </div>
                 </div>
               </div>
@@ -148,163 +140,196 @@ export default function CatalogoPage() {
 
           {/* PAGINAÇÃO */}
           {totalPaginas > 1 && (
-            <nav className="mt-4 d-flex justify-content-center">
-              <ul className="pagination">
-                {Array.from({ length: totalPaginas }, (_, i) => i + 1).map(p => (
-                  <li key={p} className={`page-item ${p === paginaAtual ? 'active' : ''}`}>
-                    <button className="page-link" onClick={() => setPaginaAtual(p)}>
-                      {p}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </nav>
+            <div className="pagination">
+              {Array.from({ length: totalPaginas }).map((_, i) => (
+                <button
+                  key={i}
+                  className={paginaAtual === i + 1 ? "active" : ""}
+                  onClick={() => setPaginaAtual(i + 1)}
+                >
+                  {i + 1}
+                </button>
+              ))}
+            </div>
           )}
         </>
       )}
 
-      {/* ===== ESTILO GLOBAL ===== */}
       <style jsx global>{`
-        .catalogo-bg {
-          background: #f5f6fa;
+        * {
+          box-sizing: border-box;
+        }
+
+        body {
+          margin: 0;
+          background: #f4f6fb;
+          font-family: Inter, system-ui, sans-serif;
+        }
+
+        .catalogo-wrapper {
+          padding: 24px;
           min-height: 100vh;
         }
 
-        .page-title {
+        .title {
+          font-size: 26px;
           font-weight: 700;
-          color: #2c2f33;
+          color: #3a2c2f;
+          margin-bottom: 4px;
         }
 
-        .page-subtitle {
-          color: #8a8f98;
-          margin-bottom: 6px;
+        .subtitle {
+          color: #7a7a7a;
+          margin-bottom: 24px;
         }
 
-        .produto-card {
+        .grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+          gap: 20px;
+        }
+
+        .card {
           background: #fff;
-          border-radius: 18px;
+          border-radius: 16px;
           overflow: hidden;
-          box-shadow: 0 12px 30px rgba(0,0,0,.08);
-          transition: transform .25s;
-          height: 100%;
-          display: flex;
-          flex-direction: column;
+          box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+          transition: transform 0.2s;
         }
 
-        .produto-card:hover {
+        .card:hover {
           transform: translateY(-6px);
         }
 
-        .img-wrapper {
+        .image-box {
           position: relative;
-          height: 220px;
-          background: #eef0f4;
-          display: flex;
-          align-items: center;
-          justify-content: center;
+          height: 180px;
+          background: #eee;
         }
 
-        .img-wrapper img {
+        .image-box img {
           width: 100%;
           height: 100%;
           object-fit: cover;
         }
 
-        .img-placeholder {
-          color: #9aa0a6;
-          font-weight: 500;
+        .no-image {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          height: 100%;
+          color: #999;
         }
 
-        .status-badge {
+        .badge {
           position: absolute;
-          top: 14px;
-          right: 14px;
-          padding: 6px 14px;
-          border-radius: 999px;
-          font-size: 0.75rem;
-          font-weight: 700;
+          top: 12px;
+          right: 12px;
+          padding: 4px 10px;
+          border-radius: 20px;
+          font-size: 12px;
+          font-weight: 600;
           color: #fff;
         }
 
-        .status-badge.on {
-          background: #22c55e;
+        .badge.on {
+          background: #2ecc71;
         }
 
-        .status-badge.off {
-          background: #ef4444;
+        .badge.off {
+          background: #e74c3c;
         }
 
-        .card-content {
-          padding: 18px;
-          display: flex;
-          flex-direction: column;
-          gap: 10px;
-          flex-grow: 1;
+        .content {
+          padding: 16px;
         }
 
-        .card-content h5 {
-          font-weight: 700;
-          color: #2c2f33;
-          margin: 0;
+        .content h3 {
+          margin: 0 0 4px;
+          font-size: 16px;
         }
 
-        .categoria {
-          font-size: 0.75rem;
-          background: #e8ecf3;
-          color: #4b5563;
-          padding: 4px 10px;
-          border-radius: 999px;
-          width: fit-content;
-          font-weight: 600;
+        .content small {
+          color: #888;
         }
 
         .info {
           display: flex;
           justify-content: space-between;
-          margin-top: 8px;
-          font-size: 0.85rem;
-          color: #6b7280;
+          margin: 16px 0;
+        }
+
+        .info span {
+          font-size: 13px;
+          color: #666;
         }
 
         .info strong {
           display: block;
-          color: #111827;
-          font-size: 0.95rem;
+          color: #000;
+          font-size: 15px;
         }
 
-        .acoes {
+        .actions {
           display: flex;
           gap: 10px;
-          margin-top: auto;
         }
 
         .btn {
           flex: 1;
           padding: 10px;
-          border-radius: 10px;
+          border-radius: 8px;
+          border: none;
+          cursor: pointer;
           font-weight: 600;
-          transition: all .2s;
+          transition: 0.2s;
         }
 
-        .btn-success {
-          background: #22c55e;
+        .btn.success {
+          background: #2ecc71;
           color: #fff;
-          border: none;
         }
 
-        .btn-danger {
-          background: #ef4444;
+        .btn.danger {
+          background: #e74c3c;
           color: #fff;
-          border: none;
         }
 
-        .btn-outline {
-          border: 2px solid #d1d5db;
+        .btn.outline {
           background: transparent;
+          border: 1px solid #ccc;
         }
 
         .btn:hover {
-          transform: scale(1.03);
+          opacity: 0.9;
+        }
+
+        .pagination {
+          margin-top: 30px;
+          display: flex;
+          justify-content: center;
+          gap: 8px;
+        }
+
+        .pagination button {
+          padding: 8px 12px;
+          border-radius: 6px;
+          border: 1px solid #ccc;
+          background: #fff;
+          cursor: pointer;
+        }
+
+        .pagination button.active {
+          background: #6b4c4f;
+          color: #fff;
+          border-color: #6b4c4f;
+        }
+
+        .loading,
+        .empty {
+          text-align: center;
+          padding: 40px;
+          color: #777;
         }
       `}</style>
     </div>

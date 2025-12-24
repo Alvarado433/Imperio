@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { useEffect, useState } from "react";
 import api from "@/Api/conectar";
@@ -11,34 +11,77 @@ interface Card {
   cor?: string;
 }
 
+interface ApiResponse {
+  status: number;
+  mensagem: string;
+  dados: {
+    dados: Card[];
+  };
+}
+
 export default function DashboardPage() {
   const [cards, setCards] = useState<Card[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.get("/admin/")
-      .then(res => {
-        const dadosComEstilo: Card[] = res.data.dados.map((card: any) => {
+    const fetchCards = async () => {
+      setLoading(true);
+
+      try {
+        const res = await api.get<ApiResponse>("/admin/dash");
+
+        // 🔒 Validação defensiva
+        const lista = res.data?.dados?.dados;
+
+        if (!Array.isArray(lista)) {
+          console.error("Formato inválido da API:", res.data);
+          setCards([]);
+          return;
+        }
+
+        // 🎨 Aplica estilo aos cards
+        const dadosComEstilo: Card[] = lista.map((card) => {
           let cor = "#d4af37";
           let icone = "bi-box-seam";
 
-          if (card.titulo.toLowerCase() === "categorias") {
-            cor = "#6f42c1";
-            icone = "bi-tags";
-          } else if (card.titulo.toLowerCase() === "banners") {
-            cor = "#0d6efd";
-            icone = "bi-image";
+          switch (card.titulo.toLowerCase()) {
+            case "categorias":
+              cor = "#6f42c1";
+              icone = "bi-tags";
+              break;
+
+            case "banners":
+              cor = "#0d6efd";
+              icone = "bi-image";
+              break;
+
+            case "usuarios":
+              cor = "#198754";
+              icone = "bi-people";
+              break;
+
+            case "produtos":
+              cor = "#fd7e14";
+              icone = "bi-bag";
+              break;
           }
 
           return { ...card, cor, icone };
         });
 
         setCards(dadosComEstilo);
-      })
-      .catch(err => console.error(err))
-      .finally(() => setLoading(false));
+      } catch (err) {
+        console.error("Erro ao buscar cards da dashboard:", err);
+        setCards([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCards();
   }, []);
 
+  // ⏳ Loading
   if (loading) {
     return <div className="p-4">Carregando dashboard...</div>;
   }
@@ -66,7 +109,7 @@ export default function DashboardPage() {
                   className="card-icon"
                   style={{
                     background: `${card.cor}22`,
-                    color: card.cor
+                    color: card.cor,
                   }}
                 >
                   <i className={`bi ${card.icone}`} />
@@ -86,8 +129,8 @@ export default function DashboardPage() {
 
       {/* ESTILO GLOBAL */}
       <style jsx global>{`
-        /* REMOVE SCROLL HORIZONTAL */
-        html, body {
+        html,
+        body {
           overflow-x: hidden;
         }
 
@@ -105,17 +148,15 @@ export default function DashboardPage() {
           color: #8d8d8d;
         }
 
-        /* GRID */
         .dashboard-grid {
           margin: 0;
         }
 
-        /* CARD */
         .dashboard-card {
           background: #fff;
           border-radius: 16px;
           padding: 20px;
-          border: 1px solid rgba(0,0,0,0.05);
+          border: 1px solid rgba(0, 0, 0, 0.05);
           transition: all 0.25s ease;
           display: flex;
           flex-direction: column;
@@ -124,7 +165,7 @@ export default function DashboardPage() {
 
         .dashboard-card:hover {
           transform: translateY(-6px);
-          box-shadow: 0 14px 30px rgba(0,0,0,0.12);
+          box-shadow: 0 14px 30px rgba(0, 0, 0, 0.12);
         }
 
         .card-label {
@@ -163,7 +204,6 @@ export default function DashboardPage() {
           color: #6b4c4f;
         }
 
-        /* MOBILE */
         @media (max-width: 768px) {
           .dashboard-wrapper {
             padding: 16px;
