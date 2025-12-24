@@ -6,6 +6,7 @@ import { FaEdit, FaStar, FaPlus, FaTrash, FaBook } from "react-icons/fa";
 import api from "@/Api/conectar";
 import { toast, ToastContainer } from "react-toastify";
 import 'react-toastify/dist/ReactToastify.css';
+import { getImagemUrl } from "@/hooks/useCarrinhoCheckout";
 
 interface Status {
   id_status: number;
@@ -27,12 +28,7 @@ interface Produto {
   statusCor?: string;
 }
 
-// Corrige URL da imagem
-const getImagemUrl = (caminho?: string) => {
-  if (!caminho) return undefined;
-  const base = api.defaults.baseURL || "";
-  return `${base}${caminho.replace(/^\/+/, "")}`;
-};
+
 
 export default function ProdutosPage() {
   const [produtos, setProdutos] = useState<Produto[]>([]);
