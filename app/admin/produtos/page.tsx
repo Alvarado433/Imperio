@@ -1,12 +1,11 @@
-'use client';
+"use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { FaEdit, FaStar, FaPlus, FaTrash, FaBook } from "react-icons/fa";
 import api from "@/Api/conectar";
 import { toast, ToastContainer } from "react-toastify";
-import 'react-toastify/dist/ReactToastify.css';
-import { getImagemUrl } from "@/hooks/useCarrinhoCheckout";
+import "react-toastify/dist/ReactToastify.css";
 
 interface Status {
   id_status: number;
@@ -28,7 +27,19 @@ interface Produto {
   statusCor?: string;
 }
 
+export const getImagemUrl = (caminho?: string) => {
+  if (!caminho) return undefined;
 
+  const base = api.defaults.baseURL || "";
+
+  // Remove barras duplicadas no início do caminho
+  const caminhoLimpo = caminho.replace(/^\/+/, "");
+
+  // Garante que a base termine com barra
+  const baseFinal = base.endsWith("/") ? base : `${base}/`;
+
+  return `${baseFinal}${caminhoLimpo}`;
+};
 
 export default function ProdutosPage() {
   const [produtos, setProdutos] = useState<Produto[]>([]);
@@ -42,14 +53,14 @@ export default function ProdutosPage() {
     try {
       const [statusRes, produtosRes] = await Promise.all([
         api.get("/admin/status"),
-        api.get("/admin/produtos")
+        api.get("/admin/produtos"),
       ]);
 
       const statuses: Status[] = statusRes.data.dados || [];
       console.log("✅ Status carregados:", statuses);
 
       const produtosConvertidos = produtosRes.data.dados.map((p: any) => {
-        const status = statuses.find(s => s.id_status === p.statusid);
+        const status = statuses.find((s) => s.id_status === p.statusid);
         return {
           ...p,
           preco: Number(p.preco),
@@ -57,14 +68,17 @@ export default function ProdutosPage() {
           id_destaque: p.id_destaque,
           statusNome: status?.nome ?? "Inativo",
           statusCor: status?.cor ?? "#999",
-          imagem: getImagemUrl(p.imagem)
+          imagem: getImagemUrl(p.imagem),
         };
       });
 
       console.log("✅ Produtos carregados:", produtosConvertidos);
       setProdutos(produtosConvertidos);
     } catch (err: any) {
-      console.error("❌ Erro ao carregar produtos:", err.response?.data || err.message || err);
+      console.error(
+        "❌ Erro ao carregar produtos:",
+        err.response?.data || err.message || err
+      );
       toast.error("Erro ao carregar produtos, veja o console");
     } finally {
       setLoading(false);
@@ -76,30 +90,37 @@ export default function ProdutosPage() {
       console.log(`🔹 Toggle destaque para produto:`, produto);
 
       if (produto.destaque && produto.id_destaque) {
-        const res = await api.delete(`/admin/produtos/destaques/${produto.id_destaque}/remover`);
+        const res = await api.delete(
+          `/admin/produtos/destaques/${produto.id_destaque}/remover`
+        );
         console.log("✅ Produto removido do destaque:", res.data);
-        setProdutos(p =>
-          p.map(i =>
-            i.id_produto === produto.id_produto
-              ? { ...i, destaque: false }
-              : i
+        setProdutos((p) =>
+          p.map((i) =>
+            i.id_produto === produto.id_produto ? { ...i, destaque: false } : i
           )
         );
       } else {
         const res = await api.post("/admin/produtos/destaques/criar", {
-          produto_id: produto.id_produto
+          produto_id: produto.id_produto,
         });
         console.log("✅ Produto adicionado ao destaque:", res.data);
-        setProdutos(p =>
-          p.map(i =>
+        setProdutos((p) =>
+          p.map((i) =>
             i.id_produto === produto.id_produto
-              ? { ...i, destaque: true, id_destaque: res.data.dados?.id_destaque }
+              ? {
+                  ...i,
+                  destaque: true,
+                  id_destaque: res.data.dados?.id_destaque,
+                }
               : i
           )
         );
       }
     } catch (err: any) {
-      console.error("❌ Erro ao atualizar destaque:", err.response?.data || err.message || err);
+      console.error(
+        "❌ Erro ao atualizar destaque:",
+        err.response?.data || err.message || err
+      );
       toast.error("Erro ao atualizar destaque, veja o console");
     }
   };
@@ -109,9 +130,12 @@ export default function ProdutosPage() {
     try {
       const res = await api.delete(`/admin/produto/${id}/remover`);
       console.log("✅ Produto excluído:", res.data);
-      setProdutos(p => p.filter(i => i.id_produto !== id));
+      setProdutos((p) => p.filter((i) => i.id_produto !== id));
     } catch (err: any) {
-      console.error("❌ Erro ao excluir produto:", err.response?.data || err.message || err);
+      console.error(
+        "❌ Erro ao excluir produto:",
+        err.response?.data || err.message || err
+      );
       toast.error("Erro ao excluir produto, veja o console");
     }
   };
@@ -142,10 +166,12 @@ export default function ProdutosPage() {
         <div className="text-center py-5">Carregando...</div>
       ) : (
         <div className="row g-4">
-          {produtos.map(prod => (
-            <div key={prod.id_produto} className="col-12 col-sm-6 col-md-4 col-xl-3">
+          {produtos.map((prod) => (
+            <div
+              key={prod.id_produto}
+              className="col-12 col-sm-6 col-md-4 col-xl-3"
+            >
               <div className="produto-card">
-
                 {/* IMAGEM */}
                 <div className="card-image">
                   {prod.imagem ? (
@@ -200,7 +226,6 @@ export default function ProdutosPage() {
                     </button>
                   </div>
                 </div>
-
               </div>
             </div>
           ))}
@@ -214,33 +239,98 @@ export default function ProdutosPage() {
           min-height: 100vh;
         }
 
-        .title { color: #6b4c4f; }
-        .btn-gold { background: #d4af37; color: #fff; border: none; }
-        .btn-dark-soft { background: #6b4c4f; color: #fff; border: none; }
+        .title {
+          color: #6b4c4f;
+        }
+        .btn-gold {
+          background: #d4af37;
+          color: #fff;
+          border: none;
+        }
+        .btn-dark-soft {
+          background: #6b4c4f;
+          color: #fff;
+          border: none;
+        }
 
         .produto-card {
           background: #fff;
           border-radius: 14px;
           overflow: hidden;
-          box-shadow: 0 6px 18px rgba(0,0,0,0.06);
-          transition: transform .2s, box-shadow .2s;
+          box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+          transition: transform 0.2s, box-shadow 0.2s;
           height: 100%;
         }
 
-        .produto-card:hover { transform: translateY(-4px); box-shadow: 0 12px 30px rgba(0,0,0,0.12); }
-        .card-image { position: relative; height: 160px; background: #eee; }
-        .card-image img, .no-image { width: 100%; height: 100%; object-fit: cover; }
-        .badge.destaque { position: absolute; top: 10px; right: 10px; background: #e74c3c; color: #fff; font-size: 11px; padding: 4px 10px; border-radius: 999px; }
+        .produto-card:hover {
+          transform: translateY(-4px);
+          box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+        }
+        .card-image {
+          position: relative;
+          height: 160px;
+          background: #eee;
+        }
+        .card-image img,
+        .no-image {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+        .badge.destaque {
+          position: absolute;
+          top: 10px;
+          right: 10px;
+          background: #e74c3c;
+          color: #fff;
+          font-size: 11px;
+          padding: 4px 10px;
+          border-radius: 999px;
+        }
 
-        .card-body { padding: 14px; }
-        .produto-nome { color: #6b4c4f; margin-bottom: 4px; }
-        .status-badge { display: inline-block; margin-bottom: 8px; padding: 4px 10px; font-size: 11px; border-radius: 999px; color: #fff; }
-        .preco { font-weight: 600; margin-bottom: 2px; }
-        .estoque { color: #888; font-size: 12px; }
-        .acoes { margin-top: 12px; display: flex; gap: 14px; font-size: 1.1rem; }
-        .acoes a, .acoes button { background: none; border: none; cursor: pointer; color: #6b4c4f; }
-        .acoes .danger { color: #e74c3c; }
-        .acoes a:hover, .acoes button:hover { color: #d4af37; }
+        .card-body {
+          padding: 14px;
+        }
+        .produto-nome {
+          color: #6b4c4f;
+          margin-bottom: 4px;
+        }
+        .status-badge {
+          display: inline-block;
+          margin-bottom: 8px;
+          padding: 4px 10px;
+          font-size: 11px;
+          border-radius: 999px;
+          color: #fff;
+        }
+        .preco {
+          font-weight: 600;
+          margin-bottom: 2px;
+        }
+        .estoque {
+          color: #888;
+          font-size: 12px;
+        }
+        .acoes {
+          margin-top: 12px;
+          display: flex;
+          gap: 14px;
+          font-size: 1.1rem;
+        }
+        .acoes a,
+        .acoes button {
+          background: none;
+          border: none;
+          cursor: pointer;
+          color: #6b4c4f;
+        }
+        .acoes .danger {
+          color: #e74c3c;
+        }
+        .acoes a:hover,
+        .acoes button:hover {
+          color: #d4af37;
+        }
       `}</style>
     </div>
   );
