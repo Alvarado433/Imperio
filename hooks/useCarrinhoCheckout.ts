@@ -1,4 +1,4 @@
-import api from '@/Api/conectar';
+import api from "@/Api/conectar";
 
 /* ===================== TYPES ===================== */
 export interface CarrinhoItem {
@@ -11,7 +11,7 @@ export interface CarrinhoItem {
 
 export type CupomApi = {
   codigo: string;
-  tipo: 'percentual' | 'fixo';
+  tipo: "percentual" | "fixo";
   valor: number;
   descricao?: string;
 };
@@ -19,13 +19,21 @@ export type CupomApi = {
 /* ===================== HELPERS ===================== */
 export const getImagemUrl = (caminho?: string) => {
   if (!caminho) return undefined;
-  const base = api.defaults.baseURL || '';
-  return `${base}${caminho.replace(/^\/+/, '')}`;
+
+  const base = api.defaults.baseURL || "";
+
+  // Remove barras duplicadas no início do caminho
+  const caminhoLimpo = caminho.replace(/^\/+/, "");
+
+  // Garante que a base termine com barra
+  const baseFinal = base.endsWith("/") ? base : `${base}/`;
+
+  return `${baseFinal}${caminhoLimpo}`;
 };
 
 // Luhn check
 export const isValidCardLuhn = (num: string) => {
-  const s = num.replace(/\D/g, '');
+  const s = num.replace(/\D/g, "");
   let sum = 0;
   let alternate = false;
 
@@ -44,14 +52,14 @@ export const isValidCardLuhn = (num: string) => {
 
 export const maskCardNumber = (value: string) =>
   value
-    .replace(/\D/g, '')
+    .replace(/\D/g, "")
     .slice(0, 19)
-    .replace(/(.{4})/g, '$1 ')
+    .replace(/(.{4})/g, "$1 ")
     .trim();
 
 export const maskExpiry = (value: string) =>
   value
-    .replace(/\D/g, '')
+    .replace(/\D/g, "")
     .slice(0, 4)
     .replace(/^(\d{2})(\d{1,2})?/, (_, m, y) => (y ? `${m}/${y}` : m));
 
@@ -76,7 +84,7 @@ export const CarrinhoService = {
   },
 
   async finalizarPedido(payload: any) {
-    const resp = await api.post('/pedido/finalizar', payload);
+    const resp = await api.post("/pedido/finalizar", payload);
     return resp.data?.dados || resp.data;
-  }
+  },
 };

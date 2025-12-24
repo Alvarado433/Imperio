@@ -1,11 +1,20 @@
 import api from "@/Api/conectar";
 
 /* ===================== HELPERS ===================== */
-const getImagemUrl = (caminho?: string) => {
+export const getImagemUrl = (caminho?: string) => {
   if (!caminho) return undefined;
+
   const base = api.defaults.baseURL || '';
-  return `${base}${caminho.replace(/^\/+/, '')}`;
+
+  // Remove barras duplicadas no início do caminho
+  const caminhoLimpo = caminho.replace(/^\/+/, '');
+
+  // Garante que a base termine com barra
+  const baseFinal = base.endsWith('/') ? base : `${base}/`;
+
+  return `${baseFinal}${caminhoLimpo}`;
 };
+
 
 // Luhn check
 const isValidCardLuhn = (num: string) => {
