@@ -39,7 +39,6 @@ export default function CarrinhosPage() {
     const fetchCarrinhos = async () => {
       try {
         const res = await api.get("/admin/carrinho"); // rota do DashboardController
-        // mapeia dados para garantir tipos corretos
         const dados: Carrinho[] = (res.data.dados || []).map((c: any) => ({
           ...c,
           usuario_nome: c.usuario_nome || `ID ${c.usuario_id}`,
@@ -63,61 +62,60 @@ export default function CarrinhosPage() {
   if (error) return <p>{error}</p>;
 
   return (
-    <div className="p-5">
-      <h1 className="text-2xl font-bold mb-4">Carrinhos</h1>
+    <div className="container mt-4">
+      <h1 className="mb-4">Carrinhos</h1>
 
       {carrinhos.length === 0 ? (
         <p>Nenhum carrinho encontrado.</p>
       ) : (
-        <table className="min-w-full border border-gray-300">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="border p-2">ID</th>
-              <th className="border p-2">Usuário</th>
-              <th className="border p-2">Qtd. Itens</th>
-              <th className="border p-2">Criado em</th>
-              <th className="border p-2">Itens</th>
-              <th className="border p-2">Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {carrinhos.map((c) => (
-              <tr key={c.id_carrinho} className="text-center align-top">
-                <td className="border p-2">{c.id_carrinho}</td>
-                <td className="border p-2">{c.usuario_nome}</td>
-                <td className="border p-2">
-                  {c.itens?.reduce((acc, item) => acc + item.quantidade, 0) || 0}
-                </td>
-                <td className="border p-2">{new Date(c.criado).toLocaleString()}</td>
-                <td className="border p-2 text-left">
-                  {c.itens?.map(item => (
-                    <div key={item.id_item} className="flex items-center gap-2 mb-1">
-                      <img
-                        src={getImagemUrl(item.imagem ?? undefined) || "/placeholder.png"}
-                        alt={item.nome_produto}
-                        className="w-10 h-10 object-cover"
-                      />
-                      <div>
-                        <p className="text-sm font-semibold">{item.nome_produto}</p>
-                        <p className="text-xs">
-                          Qtd: {item.quantidade} - R$ {(Number(item.preco_unitario) || 0).toFixed(2)}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </td>
-                <td className="border p-2">
-                  <Link
-                    href={`/admin/carrinhos/${c.id_carrinho}`}
-                    className="text-blue-600 hover:underline"
-                  >
-                    Ver
-                  </Link>
-                </td>
+        <div className="table-responsive">
+          <table className="table table-bordered table-hover align-middle text-center">
+            <thead className="table-light">
+              <tr>
+                <th>ID</th>
+                <th>Usuário</th>
+                <th>Qtd. Itens</th>
+                <th>Criado em</th>
+                <th>Itens</th>
+                <th>Ações</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {carrinhos.map((c) => (
+                <tr key={c.id_carrinho}>
+                  <td>{c.id_carrinho}</td>
+                  <td>{c.usuario_nome}</td>
+                  <td>{c.itens?.reduce((acc, item) => acc + item.quantidade, 0) || 0}</td>
+                  <td>{new Date(c.criado).toLocaleString()}</td>
+                  <td className="text-start">
+                    {c.itens?.length ? (
+                      c.itens.map(item => (
+                        <div key={item.id_item} className="d-flex align-items-center mb-2">
+                          <img
+                            src={getImagemUrl(item.imagem ?? undefined) || "/placeholder.png"}
+                            alt={item.nome_produto}
+                            style={{ width: 50, height: 50, objectFit: "cover", marginRight: 10 }}
+                          />
+                          <div>
+                            <p className="mb-0 fw-bold">{item.nome_produto}</p>
+                            <small>Qtd: {item.quantidade} - R$ {(Number(item.preco_unitario) || 0).toFixed(2)}</small>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <span className="text-muted">Sem itens</span>
+                    )}
+                  </td>
+                  <td>
+                    <Link href={`/admin/carrinhos/${c.id_carrinho}`} className="btn btn-sm btn-primary">
+                      Ver
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );
