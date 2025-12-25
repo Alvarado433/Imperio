@@ -30,10 +30,21 @@ export default function NovoCupomPage() {
   });
 
   /* =========================
-     LOG HELPER
+     LOG
   ========================= */
-  function log(label: string, data?: any) {
-    console.log(`🟣 [CUPOM] ${label}`, data ?? "");
+  const log = (msg: string, data?: any) =>
+    console.log(`🟣 [CUPOM] ${msg}`, data ?? "");
+
+  /* =========================
+     GERAR CÓDIGO
+  ========================= */
+  function gerarCodigo(prefixo = "PROMO") {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    let code = "";
+    for (let i = 0; i < 6; i++) {
+      code += chars[Math.floor(Math.random() * chars.length)];
+    }
+    return `${prefixo}-${code}`;
   }
 
   /* =========================
@@ -44,17 +55,14 @@ export default function NovoCupomPage() {
   );
 
   /* =========================
-     GERAR CÓDIGO
+     AUTO GERAR AO ABRIR
   ========================= */
-  function gerarCodigo() {
-    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-    let codigo = "";
-    for (let i = 0; i < 6; i++) {
-      codigo += chars[Math.floor(Math.random() * chars.length)];
-    }
-
-    setForm((prev) => ({ ...prev, codigo: `PROMO-${codigo}` }));
-  }
+  useEffect(() => {
+    setForm((prev) => ({
+      ...prev,
+      codigo: gerarCodigo(),
+    }));
+  }, []);
 
   /* =========================
      CARREGAR TIPOS
@@ -62,20 +70,18 @@ export default function NovoCupomPage() {
   useEffect(() => {
     async function carregarTipos() {
       try {
-        log("Buscando tipos de cupom");
+        log("Buscando tipos");
         const res = await api.get("/admin/cupom/tipos", {
           withCredentials: true,
         });
-
-        log("Resposta tipos", res.data);
+        log("Tipos recebidos", res.data);
         setTipos(res.data?.dados || []);
-      } catch (err) {
-        console.error("❌ Erro ao carregar tipos", err);
+      } catch (e) {
+        console.error("Erro tipos", e);
       } finally {
         setLoadingTipos(false);
       }
     }
-
     carregarTipos();
   }, []);
 
@@ -83,9 +89,21 @@ export default function NovoCupomPage() {
      AJUSTE AUTOMÁTICO
   ========================= */
   useEffect(() => {
-    if (tipoSelecionado?.codigo === "frete") {
-      setForm((prev) => ({ ...prev, desconto: "0" }));
+    if (!tipoSelecionado) return;
+
+    if (tipoSelecionado.codigo === "frete") {
+      setForm((p) => ({ ...p, desconto: "0" }));
     }
+
+    // muda prefixo conforme tipo
+    const prefix =
+      tipoSelecionado.codigo === "frete"
+        ? "FRETE"
+        : tipoSelecionado.codigo === "valor"
+        ? "VALE"
+        : "PROMO";
+
+    setForm((p) => ({ ...p, codigo: gerarCodigo(prefix) }));
   }, [tipoSelecionado]);
 
   /* =========================
@@ -103,26 +121,6 @@ export default function NovoCupomPage() {
   async function salvar(e: React.FormEvent) {
     e.preventDefault();
 
-    if (!form.codigo || !form.tipo_id) {
-      alert("Código e tipo são obrigatórios");
-      return;
-    }
-
-    if (
-      tipoSelecionado?.codigo !== "frete" &&
-      Number(form.desconto) <= 0
-    ) {
-      alert("Desconto inválido");
-      return;
-    }
-
-    if (form.inicio && form.expiracao) {
-      if (new Date(form.expiracao) < new Date(form.inicio)) {
-        alert("Expiração deve ser maior que início");
-        return;
-      }
-    }
-
     const payload = {
       codigo: form.codigo,
       tipo_id: Number(form.tipo_id),
@@ -133,27 +131,24 @@ export default function NovoCupomPage() {
       valor_minimo: form.valor_minimo
         ? parseFloat(form.valor_minimo)
         : 0,
-      limite_uso: form.limite_uso
-        ? Number(form.limite_uso)
-        : null,
+      limite_uso: form.limite_uso ? Number(form.limite_uso) : null,
       inicio: form.inicio || null,
       expiracao: form.expiracao || null,
       descricao: form.descricao || "",
       statusid: 1,
     };
 
-    log("Payload enviado", payload);
+    log("Payload", payload);
 
     try {
       setSalvando(true);
       await api.post("/admin/cupom/criar", payload, {
         withCredentials: true,
       });
-
-      alert("✅ Cupom criado com sucesso!");
+      alert("✅ Cupom criado!");
       router.push("/admin/cupons");
-    } catch (err) {
-      console.error("❌ Erro ao criar cupom", err);
+    } catch (e) {
+      console.error(e);
       alert("Erro ao criar cupom");
     } finally {
       setSalvando(false);
@@ -164,28 +159,27 @@ export default function NovoCupomPage() {
      UI
   ========================= */
   return (
-    <div className="wrapper">
+    <div className="layout">
+      {/* FORM */}
       <div className="card">
         <h2>🎟 Criar Cupom</h2>
 
         <form onSubmit={salvar}>
           <label>Código</label>
-          <div className="codigo">
-            <input name="codigo" value={form.codigo} onChange={handleChange} />
-            <button type="button" onClick={gerarCodigo}>
-              Gerar
+          <div className="codigo-box">
+            <input name="codigo" value={form.codigo} readOnly />
+            <button type="button" onClick={() => setForm(p => ({
+              ...p,
+              codigo: gerarCodigo()
+            }))}>
+              🔄
             </button>
           </div>
 
           <div className="grid">
             <div>
               <label>Tipo</label>
-              <select
-                name="tipo_id"
-                value={form.tipo_id}
-                onChange={handleChange}
-                required
-              >
+              <select name="tipo_id" onChange={handleChange} required>
                 <option value="">Selecione</option>
                 {tipos.map((t) => (
                   <option key={t.id_tipo} value={t.id_tipo}>
@@ -202,28 +196,18 @@ export default function NovoCupomPage() {
                 type="number"
                 step="0.01"
                 disabled={tipoSelecionado?.codigo === "frete"}
-                value={form.desconto}
                 onChange={handleChange}
               />
             </div>
 
             <div>
               <label>Valor mínimo</label>
-              <input
-                name="valor_minimo"
-                type="number"
-                step="0.01"
-                onChange={handleChange}
-              />
+              <input name="valor_minimo" type="number" step="0.01" onChange={handleChange} />
             </div>
 
             <div>
               <label>Limite de uso</label>
-              <input
-                name="limite_uso"
-                type="number"
-                onChange={handleChange}
-              />
+              <input name="limite_uso" type="number" onChange={handleChange} />
             </div>
 
             <div>
@@ -248,46 +232,61 @@ export default function NovoCupomPage() {
 
       {/* PREVIEW */}
       <div className="preview">
-        <h3>Preview do Cupom</h3>
-        <strong>{form.codigo || "CÓDIGO"}</strong>
-        <p>
-          {tipoSelecionado?.codigo === "percentual" &&
-            `${form.desconto || 0}% OFF`}
-          {tipoSelecionado?.codigo === "valor" &&
-            `R$ ${form.desconto || 0} OFF`}
+        <span className="badge">{tipoSelecionado?.nome || "Cupom"}</span>
+        <h1>
+          {tipoSelecionado?.codigo === "percentual" && `${form.desconto || 0}%`}
+          {tipoSelecionado?.codigo === "valor" && `R$ ${form.desconto || 0}`}
           {tipoSelecionado?.codigo === "frete" && "Frete Grátis"}
-        </p>
+        </h1>
+        <strong>{form.codigo}</strong>
+        <p>{form.descricao || "Descrição do cupom"}</p>
         <small>
-          Válido de {form.inicio || "—"} até {form.expiracao || "—"}
-        </small>
-        <small>
-          Mínimo: R$ {form.valor_minimo || 0} | Limite:{" "}
-          {form.limite_uso || "∞"}
+          Válido de {form.inicio || "--"} até {form.expiracao || "--"}
         </small>
       </div>
 
       <style jsx>{`
-        .wrapper {
+        .layout {
           display: grid;
           grid-template-columns: 2fr 1fr;
-          gap: 24px;
+          gap: 28px;
           padding: 40px;
         }
-        .card,
-        .preview {
+        .card, .preview {
           background: #fff;
-          padding: 24px;
-          border-radius: 16px;
-          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+          border-radius: 18px;
+          padding: 28px;
+          box-shadow: 0 20px 50px rgba(0,0,0,.08);
         }
-        .codigo {
+        .preview {
+          background: linear-gradient(135deg,#2563eb,#1e40af);
+          color: #fff;
+          text-align: center;
+        }
+        .badge {
+          background: rgba(255,255,255,.2);
+          padding: 6px 14px;
+          border-radius: 999px;
+          font-size: 13px;
+        }
+        h1 {
+          font-size: 48px;
+          margin: 20px 0;
+        }
+        .codigo-box {
           display: flex;
           gap: 8px;
         }
         .grid {
           display: grid;
-          grid-template-columns: repeat(2, 1fr);
+          grid-template-columns: repeat(2,1fr);
           gap: 12px;
+        }
+        input, select {
+          width: 100%;
+          padding: 12px;
+          border-radius: 10px;
+          border: 1px solid #ddd;
         }
         button {
           background: #2563eb;
