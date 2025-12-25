@@ -4,13 +4,19 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import api from "@/Api/conectar";
 
+/* =======================
+   TIPOS
+======================= */
 interface TipoCupom {
   id_tipo: number;
   nome: string;
   codigo: "percentual" | "valor" | "frete";
 }
 
-export default function NovoCupomPage() {
+/* =======================
+   COMPONENTE
+======================= */
+export default function CriarCupomPage() {
   const router = useRouter();
 
   const [tipos, setTipos] = useState<TipoCupom[]>([]);
@@ -29,66 +35,35 @@ export default function NovoCupomPage() {
     statusid: 1,
   });
 
-  /* =========================
+  /* =======================
      TIPO SELECIONADO
-  ========================= */
+  ======================= */
   const tipoSelecionado = tipos.find(
     (t) => String(t.id_tipo) === String(form.tipo_id)
   );
 
-  /* =========================
-     LOG SELEÇÃO DE TIPO
-  ========================= */
+  /* =======================
+     LOG FORM (DEBUG)
+  ======================= */
   useEffect(() => {
-    if (tipoSelecionado) {
-      console.log("🟢 Tipo selecionado:", tipoSelecionado);
-    }
-  }, [tipoSelecionado]);
+    console.log("📝 FORM ATUAL:", form);
+  }, [form]);
 
-  /* =========================
-     GERAR CÓDIGO
-  ========================= */
-  function gerarCodigo(prefixo = "PROMO") {
-    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-    let codigo = "";
-
-    for (let i = 0; i < 6; i++) {
-      codigo += chars[Math.floor(Math.random() * chars.length)];
-    }
-
-    const final = `${prefixo}-${codigo}`;
-
-    console.log("🎲 Código gerado:", final);
-
-    setForm((prev) => ({
-      ...prev,
-      codigo: final,
-    }));
-  }
-
-  /* =========================
+  /* =======================
      CARREGAR TIPOS
-  ========================= */
+  ======================= */
   useEffect(() => {
     async function carregarTipos() {
-      console.log("📡 Buscando tipos de cupom...");
-
       try {
+        console.log("📡 GET /admin/cupom/tipos");
         const res = await api.get("/admin/cupom/tipos", {
           withCredentials: true,
         });
 
-        console.log("✅ Resposta tipos:", res.data);
-
-        if (Array.isArray(res.data?.dados)) {
-          setTipos(res.data.dados);
-        } else {
-          console.warn("⚠️ dados não é array");
-          setTipos([]);
-        }
-      } catch (error) {
-        console.error("❌ Erro ao carregar tipos", error);
-        setTipos([]);
+        console.log("✅ TIPOS RECEBIDOS:", res.data);
+        setTipos(res.data?.dados || []);
+      } catch (err) {
+        console.error("❌ Erro ao carregar tipos", err);
       } finally {
         setLoadingTipos(false);
       }
@@ -97,203 +72,166 @@ export default function NovoCupomPage() {
     carregarTipos();
   }, []);
 
-  /* =========================
-     AJUSTE DESCONTO FRETE
-  ========================= */
+  /* =======================
+     AJUSTE AUTOMÁTICO
+  ======================= */
   useEffect(() => {
     if (tipoSelecionado?.codigo === "frete") {
       setForm((prev) => ({ ...prev, desconto: "0" }));
     }
   }, [tipoSelecionado]);
 
-  /* =========================
+  /* =======================
+     GERAR CÓDIGO
+  ======================= */
+  function gerarCodigo() {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    let cod = "";
+
+    for (let i = 0; i < 6; i++) {
+      cod += chars[Math.floor(Math.random() * chars.length)];
+    }
+
+    setForm((prev) => ({
+      ...prev,
+      codigo: `PROMO-${cod}`,
+    }));
+  }
+
+  /* =======================
      HANDLE CHANGE
-  ========================= */
+  ======================= */
   function handleChange(
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) {
     setForm({ ...form, [e.target.name]: e.target.value });
   }
 
-  /* =========================
-     SALVAR CUPOM
-  ========================= */
+  /* =======================
+     SALVAR
+  ======================= */
   async function salvar(e: React.FormEvent) {
     e.preventDefault();
 
-    console.log("📤 Enviando cupom:", form);
-
-    if (!form.codigo || !form.tipo_id) {
-      alert("Preencha código e tipo do cupom");
-      return;
-    }
-
-    if (
-      tipoSelecionado?.codigo !== "frete" &&
-      (!form.desconto || Number(form.desconto) <= 0)
-    ) {
-      alert("Informe um desconto válido");
-      return;
-    }
-
-    setSalvando(true);
+    console.log("📤 ENVIANDO CUPOM:", form);
 
     try {
-      const res = await api.post("/admin/cupons/criar", form, {
+      setSalvando(true);
+
+      await api.post("/admin/cupom/criar", form, {
         withCredentials: true,
       });
 
-      console.log("✅ Cupom criado:", res.data);
-
+      console.log("✅ CUPOM CRIADO COM SUCESSO");
       alert("Cupom criado com sucesso!");
       router.push("/admin/cupons");
-    } catch (error) {
-      console.error("❌ Erro ao criar cupom", error);
+    } catch (err) {
+      console.error("❌ ERRO AO CRIAR CUPOM", err);
       alert("Erro ao criar cupom");
     } finally {
       setSalvando(false);
     }
   }
 
-  /* =========================
+  /* =======================
+     PREVIEW TEXTO
+  ======================= */
+  function textoPreview() {
+    if (!tipoSelecionado) return "Selecione um tipo";
+
+    if (tipoSelecionado.codigo === "percentual")
+      return `${form.desconto || 0}% OFF`;
+
+    if (tipoSelecionado.codigo === "valor")
+      return `R$ ${form.desconto || 0} OFF`;
+
+    return "FRETE GRÁTIS 🚚";
+  }
+
+  /* =======================
      UI
-  ========================= */
+  ======================= */
   return (
-    <div className="cupom-wrapper">
-      <div className="cupom-card">
-        <h3>🎟 Criar Cupom</h3>
+    <div className="container">
+      {/* FORM */}
+      <div className="card">
+        <h2>Criar Cupom</h2>
 
         {loadingTipos ? (
-          <p className="loading">Carregando tipos de cupom...</p>
+          <p>Carregando tipos...</p>
         ) : (
-          <>
-            {/* PREVIEW */}
-            <div className="preview">
-              <span className="preview-label">Preview do cupom</span>
-              <h4>{form.codigo || "SEU-CUPOM"}</h4>
-
-              <p>
-                {tipoSelecionado?.codigo === "percentual" &&
-                  `${form.desconto || 0}% de desconto`}
-                {tipoSelecionado?.codigo === "valor" &&
-                  `R$ ${form.desconto || 0} OFF`}
-                {tipoSelecionado?.codigo === "frete" &&
-                  "🚚 Frete grátis"}
-              </p>
-
-              <small>
-                {form.descricao || "Descrição do cupom"}
-              </small>
+          <form onSubmit={salvar}>
+            <label>Código</label>
+            <div className="codigo">
+              <input name="codigo" value={form.codigo} onChange={handleChange} />
+              <button type="button" onClick={gerarCodigo}>
+                Gerar
+              </button>
             </div>
 
-            <form onSubmit={salvar}>
-              {/* CÓDIGO */}
-              <label>Código do cupom</label>
-              <div className="codigo-box">
-                <input
-                  name="codigo"
-                  value={form.codigo}
-                  onChange={handleChange}
-                  required
-                />
-                <button type="button" onClick={() => gerarCodigo()}>
-                  Gerar
-                </button>
-              </div>
+            <label>Tipo</label>
+            <select name="tipo_id" onChange={handleChange} required>
+              <option value="">Selecione</option>
+              {tipos.map((t) => (
+                <option key={t.id_tipo} value={t.id_tipo}>
+                  {t.nome}
+                </option>
+              ))}
+            </select>
 
-              {/* GRID */}
-              <div className="grid">
-                <div>
-                  <label>Tipo de cupom</label>
-                  <select
-                    name="tipo_id"
-                    value={form.tipo_id}
-                    onChange={handleChange}
-                    required
-                  >
-                    <option value="">Selecione</option>
-                    {tipos.map((t) => (
-                      <option key={t.id_tipo} value={t.id_tipo}>
-                        {t.nome}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+            <label>Desconto</label>
+            <input
+              name="desconto"
+              type="number"
+              disabled={tipoSelecionado?.codigo === "frete"}
+              onChange={handleChange}
+            />
 
-                <div>
-                  <label>Desconto</label>
-                  <input
-                    name="desconto"
-                    type="number"
-                    disabled={tipoSelecionado?.codigo === "frete"}
-                    value={form.desconto}
-                    onChange={handleChange}
-                  />
-                </div>
-              </div>
+            <label>Descrição</label>
+            <input name="descricao" onChange={handleChange} />
 
-              <label>Descrição</label>
-              <input
-                name="descricao"
-                onChange={handleChange}
-              />
-
-              <div className="actions">
-                <button type="button" onClick={() => router.back()}>
-                  Cancelar
-                </button>
-                <button type="submit" disabled={salvando}>
-                  {salvando ? "Salvando..." : "Criar cupom"}
-                </button>
-              </div>
-            </form>
-          </>
+            <button type="submit" disabled={salvando}>
+              {salvando ? "Salvando..." : "Criar cupom"}
+            </button>
+          </form>
         )}
       </div>
 
-      {/* ================= CSS ================= */}
-      <style jsx global>{`
-        .cupom-wrapper {
-          display: flex;
-          justify-content: center;
+      {/* PREVIEW */}
+      <div className="preview">
+        <h3>Preview do Cupom</h3>
+
+        <div className="cupom">
+          <span className="badge">{textoPreview()}</span>
+          <h4>{form.codigo || "PROMO-XXXX"}</h4>
+          <p>{form.descricao || "Descrição do cupom"}</p>
+          <small>
+            Válido até: {form.expiracao || "DD/MM/AAAA"}
+          </small>
+        </div>
+      </div>
+
+      {/* CSS */}
+      <style jsx>{`
+        .container {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 32px;
           padding: 40px;
         }
 
-        .cupom-card {
-          background: #fff;
-          padding: 36px;
-          border-radius: 20px;
-          max-width: 900px;
-          width: 100%;
-          box-shadow: 0 25px 60px rgba(0, 0, 0, 0.08);
-        }
-
+        .card,
         .preview {
-          background: linear-gradient(135deg, #2563eb, #1e40af);
-          color: #fff;
+          background: #fff;
+          padding: 32px;
           border-radius: 16px;
-          padding: 20px;
-          margin-bottom: 30px;
-        }
-
-        .preview-label {
-          font-size: 12px;
-          opacity: 0.8;
-        }
-
-        .preview h4 {
-          margin: 8px 0;
-          font-size: 22px;
-        }
-
-        .preview small {
-          opacity: 0.9;
+          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
         }
 
         label {
           font-weight: 600;
-          margin-bottom: 6px;
           display: block;
+          margin-top: 12px;
         }
 
         input,
@@ -302,39 +240,37 @@ export default function NovoCupomPage() {
           padding: 12px;
           border-radius: 10px;
           border: 1px solid #ddd;
-          margin-bottom: 16px;
+          margin-top: 6px;
         }
 
-        .codigo-box {
+        .codigo {
           display: flex;
-          gap: 10px;
+          gap: 8px;
         }
 
-        .codigo-box button {
-          background: #2563eb;
-          color: #fff;
-          padding: 0 22px;
+        button {
+          margin-top: 20px;
+          padding: 12px;
           border-radius: 10px;
           border: none;
+          background: #2563eb;
+          color: #fff;
           font-weight: 600;
         }
 
-        .grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-          gap: 16px;
+        .cupom {
+          border: 2px dashed #2563eb;
+          padding: 24px;
+          border-radius: 16px;
+          text-align: center;
         }
 
-        .actions {
-          display: flex;
-          justify-content: flex-end;
-          gap: 12px;
-          margin-top: 24px;
-        }
-
-        .actions button:last-child {
-          background: #16a34a;
+        .badge {
+          background: #2563eb;
           color: #fff;
+          padding: 6px 14px;
+          border-radius: 999px;
+          font-weight: 700;
         }
       `}</style>
     </div>
