@@ -1,156 +1,28 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import api from "@/Api/conectar";
-import { ToastContainer, toast } from "react-toastify";
+import { useState } from "react";
+import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { FaUser, FaLock, FaKey } from "react-icons/fa";
-import { useRouter } from "next/navigation";
-
-type Step = "inicio" | "login" | "pin";
+import { useLoginConfig } from "@/hooks/useLoginConfig";
 
 export default function LoginPage() {
-  const router = useRouter();
-
-  const [config, setConfig] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-
-  const [step, setStep] = useState<Step>("inicio");
+  // Inputs locais
   const [usuario, setUsuario] = useState("");
   const [senha, setSenha] = useState("");
   const [pin, setPin] = useState("");
-  const [errorMsg, setErrorMsg] = useState("");
-  const [loadingBtn, setLoadingBtn] = useState(false);
-  const [usuarioTempId, setUsuarioTempId] = useState<number | null>(null);
 
-  // ------------------------------
-  // 🔍 Busca configuração do login
-  // ------------------------------
-  useEffect(() => {
-    const fetchConfig = async () => {
-      try {
-        // ⚠️ ROTA CORRETA
-        const response = await api.get("/admin/configuracoes/login", {
-          withCredentials: true,
-        });
-        setConfig(response.data.dados[0]);
-      } catch {
-        toast.error("Erro ao carregar configuração de login");
-        setConfig({
-          fundo: "#000000",
-          logo: "/images/logo.png",
-          titulo: "Imperio Loja",
-          mensagem_personalizada: "Entre com suas credenciais.",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchConfig();
-  }, []);
-
-  // ------------------------------
-  // 🔑 Verifica sessão (não redireciona se precisar de PIN)
-  // ------------------------------
-  useEffect(() => {
-    const checkSession = async () => {
-      try {
-        const res = await api.get("/me", { withCredentials: true });
-        if (res.data?.dados?.usuario && !res.data?.dados?.pedir_pin) {
-          router.push("/");
-        } else if (res.data?.dados?.usuario && res.data?.dados?.pedir_pin) {
-          setUsuarioTempId(res.data.dados.usuario.id);
-          setStep("pin");
-        }
-      } catch {
-        // não autenticado
-      }
-    };
-    checkSession();
-  }, [router]);
-
-  // ------------------------------
-  // ⛔ Bloqueio de atalhos
-  // ------------------------------
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey && ["a", "c", "v", "u"].includes(e.key.toLowerCase())) {
-        e.preventDefault();
-        toast.warning("Atalho bloqueado!");
-      }
-      if (e.key === "F12") {
-        e.preventDefault();
-        toast.warning("Atalho bloqueado!");
-      }
-    };
-    const handleContextMenu = (e: MouseEvent) => e.preventDefault();
-
-    document.addEventListener("keydown", handleKeyDown);
-    document.addEventListener("contextmenu", handleContextMenu);
-
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-      document.removeEventListener("contextmenu", handleContextMenu);
-    };
-  }, []);
-
-  // ------------------------------
-  // 🔑 Login usuário/senha
-  // ------------------------------
-  const handleLogin = async () => {
-    if (!usuario || !senha) {
-      setErrorMsg("Preencha todos os campos!");
-      return;
-    }
-
-    setLoadingBtn(true);
-    try {
-      const res = await api.post(
-        "/login/etapa1",
-        { usuario, senha },
-        { withCredentials: true }
-      );
-      const data = res.data.dados;
-
-      if (data.acao === "pedir_pin") {
-        setUsuarioTempId(data.id_usuario);
-        setStep("pin");
-        toast.info("Digite o PIN enviado.");
-      } else {
-        toast.success("Login realizado com sucesso!");
-        router.push("/");
-      }
-    } catch (err: any) {
-      setErrorMsg(err?.response?.data?.mensagem || "Erro ao logar.");
-    } finally {
-      setLoadingBtn(false);
-    }
-  };
-
-  // ------------------------------
-  // 🔐 Validar PIN
-  // ------------------------------
-  const handleValidarPin = async () => {
-    if (!pin || !usuarioTempId) {
-      setErrorMsg("Informe o PIN.");
-      return;
-    }
-
-    setLoadingBtn(true);
-    try {
-      await api.post(
-        "/login/etapa2",
-        { id_usuario: usuarioTempId, pin },
-        { withCredentials: true }
-      );
-      toast.success("PIN confirmado! Acesso liberado.");
-      router.push("/");
-    } catch (err: any) {
-      setErrorMsg(err?.response?.data?.mensagem || "PIN incorreto");
-    } finally {
-      setLoadingBtn(false);
-    }
-  };
+  // Hook customizado com toda lógica
+  const {
+    config,
+    loading,
+    step,
+    setStep,
+    loadingBtn,
+    errorMsg,
+    handleLogin,
+    handleValidarPin,
+  } = useLoginConfig();
 
   if (loading)
     return <p className="text-white text-center mt-5">Carregando...</p>;
@@ -211,7 +83,7 @@ export default function LoginPage() {
 
             <button
               className="btn-primary"
-              onClick={handleLogin}
+              onClick={() => handleLogin(usuario, senha)}
               disabled={loadingBtn}
             >
               {loadingBtn ? <div className="spinner"></div> : "Entrar"}
@@ -246,7 +118,7 @@ export default function LoginPage() {
 
             <button
               className="btn-primary"
-              onClick={handleValidarPin}
+              onClick={() => handleValidarPin(pin)}
               disabled={pin.length < 4 || loadingBtn}
             >
               {loadingBtn ? <div className="spinner"></div> : "Validar PIN"}
