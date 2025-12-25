@@ -4,6 +4,15 @@ import { useEffect, useState } from "react";
 import api from "@/Api/conectar";
 import Link from "next/link";
 
+// Função para gerar URL completa da imagem
+export const getImagemUrl = (caminho?: string) => {
+  if (!caminho) return undefined;
+  const base = api.defaults.baseURL || "";
+  const caminhoLimpo = caminho.replace(/^\/+/, "");
+  const baseFinal = base.endsWith("/") ? base : `${base}/`;
+  return `${baseFinal}${caminhoLimpo}`;
+};
+
 interface CarrinhoItem {
   id_item: number;
   produto_id: number;
@@ -16,6 +25,7 @@ interface CarrinhoItem {
 interface Carrinho {
   id_carrinho: number;
   usuario_id: number;
+  usuario_nome?: string; // nome do usuário
   criado: string;
   itens: CarrinhoItem[];
 }
@@ -25,17 +35,20 @@ export default function CarrinhosPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Função helper para formatar preço
-  const formatPreco = (preco: number | string | null) => {
-    const valor = Number(preco);
-    return isNaN(valor) ? '0.00' : valor.toFixed(2);
-  };
-
   useEffect(() => {
     const fetchCarrinhos = async () => {
       try {
         const res = await api.get("/admin/carrinho"); // rota do DashboardController
-        setCarrinhos(res.data.dados || []);
+        // mapeia dados para garantir tipos corretos
+        const dados: Carrinho[] = (res.data.dados || []).map((c: any) => ({
+          ...c,
+          usuario_nome: c.usuario_nome || `ID ${c.usuario_id}`,
+          itens: c.itens?.map((i: any) => ({
+            ...i,
+            preco_unitario: Number(i.preco_unitario) || 0
+          })) || []
+        }));
+        setCarrinhos(dados);
       } catch (err: any) {
         console.error(err);
         setError("Erro ao carregar carrinhos.");
@@ -71,7 +84,7 @@ export default function CarrinhosPage() {
             {carrinhos.map((c) => (
               <tr key={c.id_carrinho} className="text-center align-top">
                 <td className="border p-2">{c.id_carrinho}</td>
-                <td className="border p-2">{c.usuario_id}</td>
+                <td className="border p-2">{c.usuario_nome}</td>
                 <td className="border p-2">
                   {c.itens?.reduce((acc, item) => acc + item.quantidade, 0) || 0}
                 </td>
@@ -80,14 +93,14 @@ export default function CarrinhosPage() {
                   {c.itens?.map(item => (
                     <div key={item.id_item} className="flex items-center gap-2 mb-1">
                       <img
-                        src={item.imagem ? `/public/${item.imagem}` : "/placeholder.png"}
+                        src={getImagemUrl(item.imagem ?? undefined) || "/placeholder.png"}
                         alt={item.nome_produto}
                         className="w-10 h-10 object-cover"
                       />
                       <div>
                         <p className="text-sm font-semibold">{item.nome_produto}</p>
                         <p className="text-xs">
-                          Qtd: {item.quantidade} - R$ {formatPreco(item.preco_unitario)}
+                          Qtd: {item.quantidade} - R$ {(Number(item.preco_unitario) || 0).toFixed(2)}
                         </p>
                       </div>
                     </div>
