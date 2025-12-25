@@ -106,7 +106,7 @@ export default function NovoCupomPage() {
       desconto:
         tipoSelecionado?.codigo === "frete"
           ? 0
-          : parseFloat(form.desconto),
+          : Number(form.desconto),
       valor_minimo: Number(form.valor_minimo) || 0,
       limite_uso: form.limite_uso ? Number(form.limite_uso) : null,
       inicio: form.inicio || null,
@@ -129,25 +129,22 @@ export default function NovoCupomPage() {
     }
   }
 
-  /* =========================
-     UI
-  ========================= */
   return (
     <>
-      <ToastContainer position="top-right" autoClose={3000} />
+      <ToastContainer />
 
       <div className="page">
         {/* FORM */}
         <div className="card">
-          <h1>Criar Cupom</h1>
-          <p className="subtitle">
-            Configure descontos, validade e regras do cupom
-          </p>
+          <header>
+            <h1>Criar cupom</h1>
+            <p>Defina regras, validade e tipo de desconto</p>
+          </header>
 
           <form onSubmit={salvar}>
             <div className="field">
-              <label>Código do cupom</label>
-              <div className="inline">
+              <label>Código</label>
+              <div className="code">
                 <input
                   name="codigo"
                   value={form.codigo}
@@ -162,7 +159,7 @@ export default function NovoCupomPage() {
 
             <div className="grid">
               <div className="field">
-                <label>Tipo</label>
+                <label>Tipo de cupom</label>
                 <select
                   name="tipo_id"
                   value={form.tipo_id}
@@ -178,11 +175,7 @@ export default function NovoCupomPage() {
               </div>
 
               <div className="field">
-                <label>
-                  Desconto{" "}
-                  {tipoSelecionado?.codigo === "percentual" && "(%)"}
-                  {tipoSelecionado?.codigo === "valor" && "(R$)"}
-                </label>
+                <label>Desconto</label>
                 <input
                   type="number"
                   step="0.01"
@@ -219,28 +212,28 @@ export default function NovoCupomPage() {
 
               <div className="field">
                 <label>Expiração</label>
-                <input
-                  type="date"
-                  name="expiracao"
-                  onChange={handleChange}
-                />
+                <input type="date" name="expiracao" onChange={handleChange} />
               </div>
             </div>
 
             <div className="field">
               <label>Descrição</label>
-              <input name="descricao" onChange={handleChange} />
+              <input
+                name="descricao"
+                onChange={handleChange}
+                placeholder="Ex: Cupom de boas-vindas"
+              />
             </div>
 
-            <button className="primary" disabled={salvando}>
-              {salvando ? "Salvando..." : "Criar Cupom"}
+            <button className="submit" disabled={salvando}>
+              {salvando ? "Salvando..." : "Criar cupom"}
             </button>
           </form>
         </div>
 
         {/* PREVIEW */}
         <div className="preview">
-          <span className="badge">PREVIEW</span>
+          <span>Preview</span>
           <h2>{form.codigo || "CÓDIGO"}</h2>
 
           <strong>
@@ -248,17 +241,16 @@ export default function NovoCupomPage() {
               `${form.desconto || 0}% OFF`}
             {tipoSelecionado?.codigo === "valor" &&
               `R$ ${form.desconto || 0} OFF`}
-            {tipoSelecionado?.codigo === "frete" && "🚚 Frete Grátis"}
+            {tipoSelecionado?.codigo === "frete" && "Frete grátis"}
           </strong>
 
           <p>
-            Válido de <b>{form.inicio || "—"}</b> até{" "}
-            <b>{form.expiracao || "—"}</b>
+            {form.inicio || "—"} → {form.expiracao || "—"}
           </p>
 
           <small>
-            Pedido mínimo: R$ {form.valor_minimo || 0} <br />
-            Limite de uso: {form.limite_uso || "Ilimitado"}
+            Mínimo R$ {form.valor_minimo || 0} · Uso{" "}
+            {form.limite_uso || "ilimitado"}
           </small>
         </div>
       </div>
@@ -267,26 +259,25 @@ export default function NovoCupomPage() {
       <style jsx>{`
         .page {
           display: grid;
-          grid-template-columns: 2fr 1fr;
+          grid-template-columns: 1.6fr 1fr;
           gap: 32px;
           padding: 40px;
-          background: #f5f7fb;
+          background: #f8fafc;
           min-height: 100vh;
         }
 
         .card {
           background: #fff;
           padding: 32px;
-          border-radius: 20px;
-          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+          border-radius: 16px;
+          border: 1px solid #e5e7eb;
         }
 
-        h1 {
-          font-size: 26px;
-          margin-bottom: 4px;
+        header h1 {
+          font-size: 24px;
         }
 
-        .subtitle {
+        header p {
           color: #64748b;
           margin-bottom: 24px;
         }
@@ -298,15 +289,17 @@ export default function NovoCupomPage() {
         }
 
         label {
-          font-weight: 600;
           font-size: 14px;
+          font-weight: 600;
+          color: #334155;
         }
 
         input,
         select {
           padding: 12px;
           border-radius: 10px;
-          border: 1px solid #e5e7eb;
+          border: 1px solid #d1d5db;
+          font-size: 14px;
         }
 
         .grid {
@@ -316,62 +309,56 @@ export default function NovoCupomPage() {
           margin-bottom: 16px;
         }
 
-        .inline {
+        .code {
           display: flex;
           gap: 8px;
         }
 
-        button {
-          padding: 12px 18px;
-          border-radius: 12px;
-          border: none;
-          cursor: pointer;
+        .code button {
+          padding: 0 16px;
+          background: #0f172a;
+          color: #fff;
+          border-radius: 10px;
+          font-size: 13px;
         }
 
-        .primary {
+        .submit {
           width: 100%;
-          background: linear-gradient(135deg, #2563eb, #1e40af);
-          color: white;
-          font-weight: bold;
           margin-top: 24px;
+          background: #0f172a;
+          color: #fff;
+          padding: 14px;
+          border-radius: 12px;
+          font-weight: 600;
         }
 
         .preview {
-          background: linear-gradient(135deg, #1e293b, #0f172a);
-          color: white;
+          background: #0f172a;
+          color: #fff;
           padding: 32px;
-          border-radius: 20px;
-          position: relative;
+          border-radius: 16px;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
         }
 
-        .badge {
-          position: absolute;
-          top: 16px;
-          right: 16px;
-          background: #22c55e;
-          padding: 4px 10px;
-          border-radius: 999px;
+        .preview span {
           font-size: 12px;
-          font-weight: bold;
+          opacity: 0.7;
+          text-transform: uppercase;
         }
 
         .preview h2 {
           font-size: 28px;
-          margin-bottom: 12px;
+          letter-spacing: 1px;
         }
 
         .preview strong {
-          font-size: 22px;
-          display: block;
-          margin-bottom: 12px;
-        }
-
-        .preview p {
-          margin-bottom: 8px;
+          font-size: 20px;
         }
 
         .preview small {
-          color: #cbd5f5;
+          opacity: 0.7;
         }
       `}</style>
     </>
