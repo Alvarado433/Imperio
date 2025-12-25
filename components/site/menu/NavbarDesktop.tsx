@@ -1,12 +1,11 @@
-"use client";
+'use client';
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import CategoryBar from "../categoria/CategoryBar";
 import SearchBar from "../Pesquisa/SearchBar";
 import useMenuItems from "@/hooks/menu/useMenuItems";
 import useUsuario from "@/hooks/Auth/useUsuario";
-import api from "@/Api/conectar"; // sua instância axios/fetch
 
 interface Menu {
   id?: number;
@@ -25,50 +24,30 @@ interface NavbarDesktopProps {
 export default function NavbarDesktop({
   menus,
   categorias,
-  searchPlaceholder,
+  searchPlaceholder
 }: NavbarDesktopProps) {
-  const { usuario, logado } = useUsuario();
+
+  const { usuario, loading: usuarioLoading, logado } = useUsuario();
   const { menuItems } = useMenuItems(usuario?.nivel_id);
 
   const [openDropdown, setOpenDropdown] = useState<number | null>(null);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
-  const [carrinhoQtd, setCarrinhoQtd] = useState(0);
-
-  // -------------------------------
-  // Buscar quantidade de itens do carrinho
-  // -------------------------------
-  useEffect(() => {
-    const fetchCarrinho = async () => {
-      if (!logado || !usuario) return;
-      try {
-        // ✅ Corrigido: id_usuario
-        const res = await api.get(`/carrinho/${usuario.id_usuario}`);
-        const qtd =
-          res.data.itens?.reduce(
-            (acc: number, item: any) => acc + item.quantidade,
-            0
-          ) || 0;
-        setCarrinhoQtd(qtd);
-      } catch (err) {
-        console.error("Erro ao buscar carrinho", err);
-      }
-    };
-    fetchCarrinho();
-  }, [logado, usuario]);
 
   // -------------------------------
   // Helpers
   // -------------------------------
-  const searchMenu = menus.find((m) => m.pesquisa_placeholder);
+  const searchMenu = menus.find(m => m.pesquisa_placeholder);
   const placeholder =
-    searchPlaceholder ?? searchMenu?.pesquisa_placeholder ?? "Buscar...";
+    searchPlaceholder ??
+    searchMenu?.pesquisa_placeholder ??
+    "Buscar...";
 
-  const menuPrincipal = menus.filter((m) => !m.pesquisa_placeholder);
+  const menuPrincipal = menus.filter(m => !m.pesquisa_placeholder);
 
   const getItemsForMenu = (menuId?: number) => {
     if (!menuId || !menuItems) return [];
     return menuItems
-      .filter((item) => item.menu_id === menuId)
+      .filter(item => item.menu_id === menuId)
       .sort((a, b) => (a.posicao ?? 0) - (b.posicao ?? 0));
   };
 
@@ -80,11 +59,13 @@ export default function NavbarDesktop({
       className="d-none d-lg-flex flex-column shadow-sm"
       style={{
         background: "#fffaf0",
-        borderBottom: "1px solid rgba(212,175,55,0.25)",
+        borderBottom: "1px solid rgba(212,175,55,0.25)"
       }}
     >
+
       {/* TOPO */}
       <div className="d-flex align-items-center justify-content-between py-3 px-5">
+
         {/* LOGO */}
         <Link href="/" className="text-decoration-none">
           <h1 className="fs-4 fw-bold mb-0">
@@ -95,7 +76,7 @@ export default function NavbarDesktop({
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
                 fontStyle: "italic",
-                fontWeight: 900,
+                fontWeight: 900
               }}
             >
               Império
@@ -105,17 +86,24 @@ export default function NavbarDesktop({
         </Link>
 
         {/* SEARCH */}
-        {searchMenu && <SearchBar placeholder={placeholder} className="mx-5" />}
+        {searchMenu && (
+          <SearchBar
+            placeholder={placeholder}
+            className="mx-5"
+          />
+        )}
 
         {/* MENU */}
         <div className="d-flex align-items-center gap-3">
-          {menuPrincipal.map((item) => {
+
+          {menuPrincipal.map(item => {
             const itensMenu = getItemsForMenu(item.id);
 
             // -------------------------------
             // LOGIN / USUÁRIO
             // -------------------------------
             if (item.nome.toLowerCase() === "login") {
+
               if (!logado) {
                 return (
                   <Link
@@ -142,12 +130,16 @@ export default function NavbarDesktop({
                     style={{
                       background: "#fff",
                       border: "1px solid rgba(212,175,55,0.4)",
-                      color: "#6b4c4f",
+                      color: "#6b4c4f"
                     }}
-                    onClick={() => setUserDropdownOpen(!userDropdownOpen)}
+                    onClick={() =>
+                      setUserDropdownOpen(!userDropdownOpen)
+                    }
                   >
                     <i className="bi bi-person-circle fs-5" />
-                    <span className="fw-semibold small">{usuario?.nome}</span>
+                    <span className="fw-semibold small">
+                      {usuario?.nome}
+                    </span>
                   </button>
 
                   {userDropdownOpen && userItems.length > 0 && (
@@ -159,10 +151,10 @@ export default function NavbarDesktop({
                         right: 0,
                         background: "#fffaf0",
                         border: "1px solid rgba(212,175,55,0.3)",
-                        minWidth: 200,
+                        minWidth: 200
                       }}
                     >
-                      {userItems.map((sub) => (
+                      {userItems.map(sub => (
                         <li key={sub.id}>
                           <Link
                             className="dropdown-item"
@@ -182,13 +174,16 @@ export default function NavbarDesktop({
             // MENU COM DROPDOWN
             // -------------------------------
             if (itensMenu.length > 0 && item.id !== undefined) {
-              const menuId = item.id;
+              const menuId = item.id; // number garantido
+
               return (
                 <div key={menuId} className="position-relative">
                   <button
                     className="btn btn-light rounded-circle p-2"
                     onClick={() =>
-                      setOpenDropdown(openDropdown === menuId ? null : menuId)
+                      setOpenDropdown(
+                        openDropdown === menuId ? null : menuId
+                      )
                     }
                   >
                     <i
@@ -205,10 +200,10 @@ export default function NavbarDesktop({
                         position: "absolute",
                         right: 0,
                         background: "#fffaf0",
-                        border: "1px solid rgba(212,175,55,0.3)",
+                        border: "1px solid rgba(212,175,55,0.3)"
                       }}
                     >
-                      {itensMenu.map((sub) => (
+                      {itensMenu.map(sub => (
                         <li key={sub.id}>
                           <Link
                             className="dropdown-item"
@@ -242,32 +237,15 @@ export default function NavbarDesktop({
               </Link>
             );
           })}
-
-          {/* -------------------------------
-              ÍCONE DO CARRINHO
-          ------------------------------- */}
-          {logado && (
-            <Link
-              href="/carrinho"
-              className="position-relative text-decoration-none"
-            >
-              <i className="bi bi-cart fs-5" style={{ color: "#c97a7e" }} />
-              {carrinhoQtd > 0 && (
-                <span
-                  className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
-                  style={{ fontSize: "0.7rem" }}
-                >
-                  {carrinhoQtd}
-                </span>
-              )}
-            </Link>
-          )}
         </div>
       </div>
 
       {/* CATEGORIAS */}
       {categorias && categorias.length > 0 && (
-        <div className="border-top py-2 px-5" style={{ background: "#fffaf0" }}>
+        <div
+          className="border-top py-2 px-5"
+          style={{ background: "#fffaf0" }}
+        >
           <CategoryBar />
         </div>
       )}
