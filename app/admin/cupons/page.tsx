@@ -39,13 +39,17 @@ export default function CuponsPage() {
 
   async function remover(id: number) {
     if (!confirm("Deseja remover este cupom?")) return;
+
+    console.log(`🗑 Removendo cupom ID ${id}...`);
+
     try {
-      console.log(`🗑 Removendo cupom ID ${id}...`);
-      await api.delete(`/admin/cupons/${id}`, { withCredentials: true });
-      console.log("✅ Cupom removido");
-      carregar();
+      await api.delete(`/admin/cupom/${id}/remover`, { withCredentials: true });
+
+      console.log("✅ Cupom removido com sucesso");
+      await carregar();
     } catch (e) {
       console.error("❌ Erro ao remover cupom:", e);
+      alert("Erro ao remover cupom.");
     }
   }
 
