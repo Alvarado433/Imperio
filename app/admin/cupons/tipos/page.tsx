@@ -20,6 +20,7 @@ export default function TiposCuponsPage() {
   const [nome, setNome] = useState("");
   const [codigo, setCodigo] = useState("");
   const [descricao, setDescricao] = useState("");
+  const [editId, setEditId] = useState<number | null>(null);
 
   useEffect(() => {
     fetchTipos();
@@ -40,24 +41,20 @@ export default function TiposCuponsPage() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     try {
-      await api.post("/admin/cupom/tipos/criar", { // rota correta para criar tipo
-        nome,
-        codigo,
-        descricao,
-        statusid: 1,
-      });
-
-      // limpa campos e fecha painel
+      if (editId) {
+        await api.put(`/admin/cupom/tipo/${editId}`, { nome, codigo, descricao, statusid: 1 });
+      } else {
+        await api.post("/admin/cupom/criar", { nome, codigo, descricao, statusid: 1 });
+      }
+      setShowPanel(false);
       setNome("");
       setCodigo("");
       setDescricao("");
-      setShowPanel(false);
-
-      // atualiza lista
+      setEditId(null);
       fetchTipos();
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      alert("Erro ao criar tipo de cupom.");
+      alert("Erro ao salvar tipo de cupom.");
     }
   };
 
@@ -65,7 +62,7 @@ export default function TiposCuponsPage() {
   if (error) return <p>{error}</p>;
 
   return (
-    <div className="container mt-4">
+    <div className="container mt-4 position-relative">
       <style>
         {`
           .offcanvas-custom {
@@ -79,7 +76,7 @@ export default function TiposCuponsPage() {
             box-shadow: -4px 0 12px rgba(0,0,0,0.2);
             transform: translateX(100%);
             transition: transform 0.3s ease-in-out;
-            z-index: 1060;
+            z-index: 1100;
             padding: 20px;
           }
           .offcanvas-custom.show {
@@ -91,7 +88,7 @@ export default function TiposCuponsPage() {
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.3);
+            background: rgba(0,0,0,0.5);
             z-index: 1050;
           }
           .card-hover:hover {
@@ -101,17 +98,7 @@ export default function TiposCuponsPage() {
         `}
       </style>
 
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <h1>Tipos de Cupom</h1>
-        <button className="btn btn-primary" onClick={() => {
-          setNome("");
-          setCodigo("");
-          setDescricao("");
-          setShowPanel(true);
-        }}>
-          + Adicionar Tipo
-        </button>
-      </div>
+      <h1 className="mb-4">Tipos de Cupom</h1>
 
       {tipos.length === 0 ? (
         <p>Nenhum tipo de cupom encontrado.</p>
@@ -132,6 +119,18 @@ export default function TiposCuponsPage() {
                     >
                       {tipo.statusid === 1 ? 'Ativo' : 'Inativo'}
                     </span>
+                    <button
+                      className="btn btn-sm btn-outline-primary"
+                      onClick={() => {
+                        setNome(tipo.nome);
+                        setCodigo(tipo.codigo);
+                        setDescricao(tipo.descricao);
+                        setEditId(tipo.id_tipo);
+                        setShowPanel(true);
+                      }}
+                    >
+                      Editar
+                    </button>
                   </div>
                 </div>
               </div>
@@ -140,9 +139,24 @@ export default function TiposCuponsPage() {
         </div>
       )}
 
+      {/* Botão flutuante */}
+      <button
+        className="btn btn-primary position-fixed"
+        style={{ top: '100px', right: '20px', zIndex: 1101 }}
+        onClick={() => {
+          setNome("");
+          setCodigo("");
+          setDescricao("");
+          setEditId(null);
+          setShowPanel(true);
+        }}
+      >
+        + Adicionar Tipo
+      </button>
+
       {/* Painel lateral */}
       <div className={`offcanvas-custom ${showPanel ? 'show' : ''}`}>
-        <h5>Adicionar Tipo de Cupom</h5>
+        <h5>{editId ? "Editar Tipo" : "Adicionar Tipo de Cupom"}</h5>
         <hr />
         <form onSubmit={handleSubmit}>
           <div className="mb-3">
