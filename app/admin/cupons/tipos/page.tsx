@@ -22,93 +22,136 @@ export default function TiposCuponsPage() {
   const [descricao, setDescricao] = useState("");
 
   useEffect(() => {
-    fetchTipos();
+    carregarTipos();
   }, []);
 
-  const fetchTipos = async () => {
+  const carregarTipos = async () => {
     try {
       const res = await api.get("/admin/cupom/tipos");
       setTipos(res.data.dados || []);
-    } catch (err) {
+    } catch {
       setError("Erro ao carregar tipos de cupom.");
     } finally {
       setLoading(false);
     }
   };
 
-  // ✅ SALVANDO NA ROTA CORRETA
-  const handleSubmit = async (e: FormEvent) => {
+  const salvarTipo = async (e: FormEvent) => {
     e.preventDefault();
-
     try {
       await api.post("/admin/cupom/tipos/criar", {
         nome,
         codigo,
         descricao,
-        statusid: 1,
+        statusid: 1
       });
 
       setShowPanel(false);
       setNome("");
       setCodigo("");
       setDescricao("");
-
-      fetchTipos();
-    } catch (err) {
-      console.error(err);
-      alert("Erro ao criar tipo de cupom.");
+      carregarTipos();
+    } catch {
+      alert("Erro ao salvar tipo de cupom");
     }
   };
 
-  if (loading) return <p>Carregando tipos de cupom...</p>;
-  if (error) return <p>{error}</p>;
+  if (loading) return <div className="text-center mt-5">Carregando...</div>;
+  if (error) return <div className="alert alert-danger">{error}</div>;
 
   return (
-    <div className="container mt-4 position-relative">
+    <div className="container py-4">
 
-      {/* CSS INLINE */}
+      {/* ESTILO */}
       <style>{`
-        .offcanvas-custom {
+        body {
+          background: #f5f6fa;
+        }
+        .page-title {
+          font-weight: 600;
+          letter-spacing: .5px;
+        }
+        .card-tipo {
+          border: none;
+          border-radius: 14px;
+          transition: all .25s ease;
+          background: #fff;
+        }
+        .card-tipo:hover {
+          transform: translateY(-4px);
+          box-shadow: 0 10px 25px rgba(0,0,0,.08);
+        }
+        .badge-ativo {
+          background: #198754;
+        }
+        .fab {
+          position: fixed;
+          right: 25px;
+          bottom: 25px;
+          width: 56px;
+          height: 56px;
+          border-radius: 50%;
+          font-size: 28px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 1060;
+        }
+        .offcanvas-admin {
           position: fixed;
           top: 0;
           right: 0;
-          width: 360px;
+          width: 380px;
           height: 100%;
           background: #fff;
-          box-shadow: -4px 0 15px rgba(0,0,0,0.15);
+          box-shadow: -6px 0 25px rgba(0,0,0,.15);
           transform: translateX(100%);
           transition: transform .3s ease;
           z-index: 1055;
-          padding: 20px;
+          padding: 24px;
         }
-        .offcanvas-custom.show {
+        .offcanvas-admin.show {
           transform: translateX(0);
         }
-        .backdrop-custom {
+        .offcanvas-header {
+          font-weight: 600;
+          font-size: 1.2rem;
+        }
+        .backdrop {
           position: fixed;
           inset: 0;
-          background: rgba(0,0,0,.4);
+          background: rgba(0,0,0,.35);
           z-index: 1050;
         }
       `}</style>
 
-      <h1 className="mb-4">Tipos de Cupom</h1>
+      {/* TÍTULO */}
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <h2 className="page-title">Tipos de Cupom</h2>
+      </div>
 
+      {/* LISTAGEM */}
       {tipos.length === 0 ? (
-        <p>Nenhum tipo de cupom encontrado.</p>
+        <div className="alert alert-light text-center">
+          Nenhum tipo de cupom cadastrado
+        </div>
       ) : (
-        <div className="row g-3">
+        <div className="row g-4">
           {tipos.map(tipo => (
             <div key={tipo.id_tipo} className="col-md-4">
-              <div className="card shadow-sm h-100">
-                <div className="card-body">
-                  <h5>{tipo.nome}</h5>
-                  <small className="text-muted">{tipo.codigo}</small>
-                  <p className="mt-2">{tipo.descricao || "Sem descrição"}</p>
-                  <span className={`badge ${tipo.statusid === 1 ? 'bg-success' : 'bg-secondary'}`}>
+              <div className="card card-tipo p-3 h-100">
+                <div className="d-flex justify-content-between">
+                  <div>
+                    <h5 className="mb-1">{tipo.nome}</h5>
+                    <small className="text-muted">{tipo.codigo}</small>
+                  </div>
+                  <span className={`badge ${tipo.statusid === 1 ? 'badge-ativo' : 'bg-secondary'}`}>
                     {tipo.statusid === 1 ? 'Ativo' : 'Inativo'}
                   </span>
                 </div>
+                <p className="mt-3 text-muted">
+                  {tipo.descricao || "Sem descrição"}
+                </p>
               </div>
             </div>
           ))}
@@ -117,19 +160,18 @@ export default function TiposCuponsPage() {
 
       {/* BOTÃO FLUTUANTE */}
       <button
-        className="btn btn-primary position-fixed"
-        style={{ right: 20, bottom: 20, zIndex: 1060 }}
+        className="btn btn-primary fab"
         onClick={() => setShowPanel(true)}
       >
-        + Novo Tipo
+        +
       </button>
 
       {/* PAINEL LATERAL */}
-      <div className={`offcanvas-custom ${showPanel ? "show" : ""}`}>
-        <h5>Novo Tipo de Cupom</h5>
-        <hr />
-
-        <form onSubmit={handleSubmit}>
+      <div className={`offcanvas-admin ${showPanel ? 'show' : ''}`}>
+        <div className="offcanvas-header mb-3">
+          Novo Tipo de Cupom
+        </div>
+        <form onSubmit={salvarTipo}>
           <div className="mb-3">
             <label className="form-label">Nome</label>
             <input
@@ -159,10 +201,10 @@ export default function TiposCuponsPage() {
             />
           </div>
 
-          <div className="d-flex justify-content-end">
+          <div className="d-flex justify-content-end gap-2 mt-4">
             <button
               type="button"
-              className="btn btn-secondary me-2"
+              className="btn btn-outline-secondary"
               onClick={() => setShowPanel(false)}
             >
               Cancelar
@@ -174,7 +216,7 @@ export default function TiposCuponsPage() {
         </form>
       </div>
 
-      {showPanel && <div className="backdrop-custom" onClick={() => setShowPanel(false)} />}
+      {showPanel && <div className="backdrop" onClick={() => setShowPanel(false)} />}
     </div>
   );
 }
