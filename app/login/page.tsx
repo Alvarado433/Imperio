@@ -34,6 +34,7 @@ export default function LoginPage() {
     }
 
     try {
+      setStep(step); // mantém a tela atual para bloquear inputs
       const res = await api.post("/usuarios", {
         nome,
         email,
@@ -55,6 +56,8 @@ export default function LoginPage() {
     }
   };
 
+  const bloqueioAtivo = loading || loadingBtn;
+
   if (loading) return <p className="text-white text-center mt-5">Carregando...</p>;
 
   return (
@@ -68,7 +71,7 @@ export default function LoginPage() {
             <img src={config?.logo} alt="Logo" className="logo-login" />
             <h1>{config?.titulo}</h1>
             {config?.mensagem_personalizada && <p className="message">{config.mensagem_personalizada}</p>}
-            <button className="btn-primary" onClick={() => setStep("login")}>Entrar</button>
+            <button className="btn-primary" onClick={() => setStep("login")} disabled={bloqueioAtivo}>Entrar</button>
           </div>
         )}
 
@@ -81,21 +84,21 @@ export default function LoginPage() {
 
             <div className="input-wrapper">
               <div className="input-icon"><FaUser /></div>
-              <input type="text" placeholder="Usuário ou Email" value={usuario} onChange={e => setUsuario(e.target.value)} />
+              <input type="text" placeholder="Usuário ou Email" value={usuario} onChange={e => setUsuario(e.target.value)} disabled={bloqueioAtivo}/>
             </div>
 
             <div className="input-wrapper">
               <div className="input-icon"><FaLock /></div>
-              <input type="password" placeholder="Senha" value={senha} onChange={e => setSenha(e.target.value)} />
+              <input type="password" placeholder="Senha" value={senha} onChange={e => setSenha(e.target.value)} disabled={bloqueioAtivo}/>
             </div>
 
-            <button className="btn-primary" onClick={() => handleLogin(usuario, senha)}>
+            <button className="btn-primary" onClick={() => handleLogin(usuario, senha)} disabled={bloqueioAtivo}>
               {loadingBtn ? <div className="spinner"></div> : "Entrar"}
             </button>
 
             <div className="links">
               <a href="#">Esqueci minha senha</a>
-              <button className="voltar" onClick={() => setStep("cadastro")}>Criar conta</button>
+              <button className="voltar" onClick={() => setStep("cadastro")} disabled={bloqueioAtivo}>Criar conta</button>
             </div>
           </div>
         )}
@@ -109,14 +112,14 @@ export default function LoginPage() {
 
             <div className="input-wrapper">
               <div className="input-icon"><FaKey /></div>
-              <input type="password" maxLength={6} value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, ""))} placeholder="••••" />
+              <input type="password" maxLength={6} value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, ""))} placeholder="••••" disabled={bloqueioAtivo}/>
             </div>
 
-            <button className="btn-primary" onClick={() => handleValidarPin(pin)} disabled={pin.length < 4}>
+            <button className="btn-primary" onClick={() => handleValidarPin(pin)} disabled={pin.length < 4 || bloqueioAtivo}>
               {loadingBtn ? <div className="spinner"></div> : "Validar PIN"}
             </button>
 
-            <button className="voltar" onClick={() => setStep("login")}>Voltar</button>
+            <button className="voltar" onClick={() => setStep("login")} disabled={bloqueioAtivo}>Voltar</button>
           </div>
         )}
 
@@ -128,113 +131,100 @@ export default function LoginPage() {
 
             <div className="input-wrapper">
               <div className="input-icon"><FaUser /></div>
-              <input type="text" placeholder="Nome completo" value={nome} onChange={e => setNome(e.target.value)} />
+              <input type="text" placeholder="Nome completo" value={nome} onChange={e => setNome(e.target.value)} disabled={bloqueioAtivo}/>
             </div>
 
             <div className="input-wrapper">
               <div className="input-icon"><FaEnvelope /></div>
-              <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} />
+              <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} disabled={bloqueioAtivo}/>
             </div>
 
             <div className="input-wrapper">
               <div className="input-icon"><FaLock /></div>
-              <input type="password" placeholder="Senha" value={senha} onChange={e => setSenha(e.target.value)} />
+              <input type="password" placeholder="Senha" value={senha} onChange={e => setSenha(e.target.value)} disabled={bloqueioAtivo}/>
             </div>
 
             <div className="input-wrapper">
               <div className="input-icon"><FaPhone /></div>
-              <input type="text" placeholder="Telefone" value={telefone} onChange={e => setTelefone(e.target.value)} />
+              <input type="text" placeholder="Telefone" value={telefone} onChange={e => setTelefone(e.target.value)} disabled={bloqueioAtivo}/>
             </div>
 
             <div className="input-wrapper">
               <div className="input-icon"><FaKey /></div>
-              <input type="text" placeholder="CPF" value={cpf} onChange={e => setCpf(e.target.value)} />
+              <input type="text" placeholder="CPF" value={cpf} onChange={e => setCpf(e.target.value)} disabled={bloqueioAtivo}/>
             </div>
 
-            <button className="btn-primary" onClick={handleCadastro}>
+            <button className="btn-primary" onClick={handleCadastro} disabled={bloqueioAtivo}>
               {loadingBtn ? <div className="spinner"></div> : "Criar Conta"}
             </button>
 
-            <button className="voltar" onClick={() => setStep("login")}>Voltar</button>
+            <button className="voltar" onClick={() => setStep("login")} disabled={bloqueioAtivo}>Voltar</button>
+          </div>
+        )}
+
+        {/* ================== OVERLAY BLOQUEIO ================== */}
+        {bloqueioAtivo && (
+          <div className="overlay">
+            <div className="spinner"></div>
           </div>
         )}
       </div>
 
       <style jsx>{`
         html, body, .login-bg {
-          margin: 0; padding: 0; height: 100vh; width: 100%;
-          display: flex; justify-content: center; align-items: center;
+          margin:0; padding:0; height:100vh; width:100%;
+          display:flex; justify-content:center; align-items:center;
           font-family: 'Segoe UI', sans-serif; position: relative;
           background: ${config?.fundo || "#0e0e0e"};
         }
 
         .login-bg::before {
-          content: "";
-          position: absolute; top: -50%; left: -50%;
-          width: 200%; height: 200%;
+          content:""; position:absolute; top:-50%; left:-50%;
+          width:200%; height:200%;
           background: radial-gradient(circle at 25% 25%, rgba(255,90,95,0.05), transparent),
                       radial-gradient(circle at 75% 75%, rgba(0,150,255,0.05), transparent);
-          animation: rotateBG 30s linear infinite;
-          z-index: 0;
+          animation: rotateBG 30s linear infinite; z-index:0;
         }
 
         @keyframes rotateBG { 0% { transform: rotate(0deg) scale(1); } 50% { transform: rotate(180deg) scale(1.05); } 100% { transform: rotate(360deg) scale(1); } }
 
-        .login-container {
-          position: relative; z-index: 1;
-          width: 100%; max-width: 400px;
-          padding: 50px 30px; display: flex; flex-direction: column; align-items: center;
-          background: rgba(0,0,0,0.5); border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.6);
-          backdrop-filter: blur(15px); color: #fff; text-align: center;
-          animation: fadeIn 0.8s ease-in-out;
+        .login-container { position: relative; z-index:1;
+          width:100%; max-width:400px; padding:50px 30px; display:flex; flex-direction:column; align-items:center;
+          background: rgba(0,0,0,0.5); border-radius:25px; box-shadow:0 10px 30px rgba(0,0,0,0.6);
+          backdrop-filter: blur(15px); color:#fff; text-align:center; animation: fadeIn 0.8s ease-in-out;
         }
 
         .animate-slideIn { animation: slideIn 0.5s ease-out; }
 
-        @keyframes slideIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes slideIn { from { transform: translateY(20px); opacity:0; } to { transform: translateY(0); opacity:1; } }
         @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
 
-        .logo-login { width: 120px; margin-bottom: 25px; }
+        .logo-login { width:120px; margin-bottom:25px; }
+        h1 { font-size:2rem; font-weight:700; background: linear-gradient(90deg,#ff758c,#2f3c95); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
 
-        h1 { font-size: 2rem; font-weight: 700;
-          background: linear-gradient(90deg,#ff758c,#2f3c95); -webkit-background-clip:text; -webkit-text-fill-color:transparent;
-        }
+        .input-wrapper { width:100%; display:flex; align-items:center; padding:12px 15px; margin-bottom:15px; border-radius:12px; background: rgba(255,255,255,0.05); border:2px solid #444; transition:0.3s; }
+        .input-wrapper:focus-within { border-color:#6c63ff; background: rgba(255,255,255,0.1); }
+        .input-icon { margin-right:10px; color:#aaa; font-size:1.2rem; }
+        .input-wrapper input { flex:1; background:transparent; border:none; outline:none; color:#fff; font-size:1rem; }
+        .input-wrapper input::placeholder { color:#aaa; }
 
-        .input-wrapper {
-          width: 100%; display: flex; align-items: center; padding: 12px 15px;
-          margin-bottom: 15px; border-radius: 12px; background: rgba(255,255,255,0.05);
-          border: 2px solid #444; transition: 0.3s;
-        }
-
-        .input-wrapper:focus-within { border-color: #6c63ff; background: rgba(255,255,255,0.1); }
-
-        .input-icon { margin-right: 10px; color: #aaa; font-size: 1.2rem; }
-
-        .input-wrapper input {
-          flex: 1; background: transparent; border: none; outline: none; color: #fff; font-size: 1rem;
-        }
-        .input-wrapper input::placeholder { color: #aaa; }
-
-        .btn-primary {
-          width: 100%; padding: 14px; margin-top: 10px;
-          border: none; border-radius: 12px; font-size: 1.1rem; font-weight: 600;
-          color: #fff; cursor: pointer; display: flex; justify-content:center; align-items:center;
-          background: linear-gradient(90deg,#ff758c,#2f3c95); box-shadow: 0 6px 20px rgba(0,0,0,0.5); transition: 0.3s;
-        }
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.6); }
-
-        .voltar { margin-top: 10px; border:1px solid #fff; border-radius:8px; width:100%; padding:10px 0; cursor:pointer; background:none; color:#fff; }
+        .btn-primary { width:100%; padding:14px; margin-top:10px; border:none; border-radius:12px; font-size:1.1rem; font-weight:600; color:#fff; cursor:pointer; display:flex; justify-content:center; align-items:center; background: linear-gradient(90deg,#ff758c,#2f3c95); box-shadow:0 6px 20px rgba(0,0,0,0.5); transition:0.3s; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow:0 8px 25px rgba(0,0,0,0.6); }
+        .voltar { margin-top:10px; border:1px solid #fff; border-radius:8px; width:100%; padding:10px 0; cursor:pointer; background:none; color:#fff; }
         .voltar:hover { background: rgba(255,255,255,0.1); }
-
-        .spinner { width: 18px; height:18px; border:3px solid rgba(255,255,255,0.3); border-top:3px solid #fff; border-radius:50%; animation:spin 1s linear infinite; margin-right:8px; }
-
+        .spinner { width:18px; height:18px; border:3px solid rgba(255,255,255,0.3); border-top:3px solid #fff; border-radius:50%; animation:spin 1s linear infinite; margin-right:8px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
         .links { margin-top:15px; display:flex; justify-content:space-between; width:100%; }
         .links a { color:#aaa; font-size:0.9rem; text-decoration:none; }
         .links a:hover { color:#fff; }
-
         .error-msg { color:#ff6b6b; font-weight:500; margin-bottom:10px; }
+
+        /* ================== OVERLAY BLOQUEIO ================== */
+        .overlay {
+          position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5);
+          display:flex; justify-content:center; align-items:center; z-index:9999;
+        }
 
         @media(max-width:480px){ .login-container{ padding:40px 20px;} h1{ font-size:1.6rem;} .links{ flex-direction:column; gap:10px; align-items:center;} }
       `}</style>
