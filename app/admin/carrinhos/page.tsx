@@ -25,7 +25,7 @@ interface CarrinhoItem {
 interface Carrinho {
   id_carrinho: number;
   usuario_id: number;
-  usuario_nome?: string; // nome do usuário
+  usuario_nome?: string;
   criado: string;
   itens: CarrinhoItem[];
 }
@@ -38,7 +38,7 @@ export default function CarrinhosPage() {
   useEffect(() => {
     const fetchCarrinhos = async () => {
       try {
-        const res = await api.get("/admin/carrinho"); // rota do DashboardController
+        const res = await api.get("/admin/carrinho");
         const dados: Carrinho[] = (res.data.dados || []).map((c: any) => ({
           ...c,
           usuario_nome: c.usuario_nome || `ID ${c.usuario_id}`,
@@ -68,53 +68,45 @@ export default function CarrinhosPage() {
       {carrinhos.length === 0 ? (
         <p>Nenhum carrinho encontrado.</p>
       ) : (
-        <div className="table-responsive">
-          <table className="table table-bordered table-hover align-middle text-center">
-            <thead className="table-light">
-              <tr>
-                <th>ID</th>
-                <th>Usuário</th>
-                <th>Qtd. Itens</th>
-                <th>Criado em</th>
-                <th>Itens</th>
-                <th>Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              {carrinhos.map((c) => (
-                <tr key={c.id_carrinho}>
-                  <td>{c.id_carrinho}</td>
-                  <td>{c.usuario_nome}</td>
-                  <td>{c.itens?.reduce((acc, item) => acc + item.quantidade, 0) || 0}</td>
-                  <td>{new Date(c.criado).toLocaleString()}</td>
-                  <td className="text-start">
-                    {c.itens?.length ? (
-                      c.itens.map(item => (
-                        <div key={item.id_item} className="d-flex align-items-center mb-2">
+        <div className="row g-3">
+          {carrinhos.map(c => (
+            <div key={c.id_carrinho} className="col-md-6 col-lg-4">
+              <div className="card h-100 shadow-sm">
+                <div className="card-body">
+                  <h5 className="card-title">{c.usuario_nome}</h5>
+                  <h6 className="card-subtitle mb-2 text-muted">
+                    Criado em: {new Date(c.criado).toLocaleString()}
+                  </h6>
+                  <p className="mb-2"><strong>Total de itens:</strong> {c.itens?.reduce((acc, item) => acc + item.quantidade, 0)}</p>
+
+                  {c.itens?.length ? (
+                    <div className="d-flex flex-column gap-2">
+                      {c.itens.map(item => (
+                        <div key={item.id_item} className="d-flex align-items-center border rounded p-2">
                           <img
                             src={getImagemUrl(item.imagem ?? undefined) || "/placeholder.png"}
                             alt={item.nome_produto}
                             style={{ width: 50, height: 50, objectFit: "cover", marginRight: 10 }}
                           />
                           <div>
-                            <p className="mb-0 fw-bold">{item.nome_produto}</p>
+                            <p className="mb-1 fw-bold">{item.nome_produto}</p>
                             <small>Qtd: {item.quantidade} - R$ {(Number(item.preco_unitario) || 0).toFixed(2)}</small>
                           </div>
                         </div>
-                      ))
-                    ) : (
-                      <span className="text-muted">Sem itens</span>
-                    )}
-                  </td>
-                  <td>
-                    <Link href={`/admin/carrinhos/${c.id_carrinho}`} className="btn btn-sm btn-primary">
-                      Ver
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-muted">Sem itens</p>
+                  )}
+                </div>
+                <div className="card-footer text-end bg-white">
+                  <Link href={`/admin/carrinhos/${c.id_carrinho}`} className="btn btn-sm btn-primary">
+                    Ver detalhes
+                  </Link>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>
