@@ -51,9 +51,18 @@ export default function CuponsPage() {
 
   async function alternarPublicacao(cupom: Cupom) {
     const novoStatus = cupom.statusid === 7 ? 8 : 7;
-    console.log(`🔄 Alterando status do cupom ID ${cupom.id_cupom} para ${novoStatus}...`);
+
+    console.log(
+      `🔄 Alterando status do cupom ID ${cupom.id_cupom} para ${novoStatus}...`
+    );
+
     try {
-      await api.put(`/admin/cupons/${cupom.id_cupom}/status/${novoStatus}`, {}, { withCredentials: true });
+      await api.put(
+        `/admin/cupom/${cupom.id_cupom}/status/${novoStatus}`,
+        {},
+        { withCredentials: true }
+      );
+
       await carregar();
     } catch (e) {
       console.error("❌ Erro ao atualizar status:", e);
@@ -93,26 +102,49 @@ export default function CuponsPage() {
             <div className="cupom-card" key={c.id_cupom}>
               <div className="card-top">
                 <div className="badges">
-                  <span className={`status ${
-                    c.statusid === 7 ? "publicado" :
-                    c.statusid === 8 ? "desativado" : "ativo"
-                  }`}>
-                    {c.statusid === 7 ? "Publicado" : c.statusid === 8 ? "Desativado" : "Ativo"}
+                  <span
+                    className={`status ${
+                      c.statusid === 7
+                        ? "publicado"
+                        : c.statusid === 8
+                        ? "desativado"
+                        : "ativo"
+                    }`}
+                  >
+                    {c.statusid === 7
+                      ? "Publicado"
+                      : c.statusid === 8
+                      ? "Desativado"
+                      : "Ativo"}
                   </span>
-                  <span className={`badge-publico ${
-                    c.publico === 7 ? "publico" : "privado"
-                  }`}>
+                  <span
+                    className={`badge-publico ${
+                      c.publico === 7 ? "publico" : "privado"
+                    }`}
+                  >
                     {c.publico === 7 ? "Público" : "Privado"}
                   </span>
                 </div>
                 <div className="acoes">
-                  <Link href={`/admin/cupons/${c.id_cupom}`} className="icon edit" title="Editar">
+                  <Link
+                    href={`/admin/cupons/${c.id_cupom}`}
+                    className="icon edit"
+                    title="Editar"
+                  >
                     <i className="bi bi-pencil-square" />
                   </Link>
-                  <button className="icon delete" onClick={() => remover(c.id_cupom)} title="Remover">
+                  <button
+                    className="icon delete"
+                    onClick={() => remover(c.id_cupom)}
+                    title="Remover"
+                  >
                     <i className="bi bi-trash" />
                   </button>
-                  <button className="icon publish" onClick={() => alternarPublicacao(c)} title={c.statusid === 7 ? "Desativar" : "Publicar"}>
+                  <button
+                    className="icon publish"
+                    onClick={() => alternarPublicacao(c)}
+                    title={c.statusid === 7 ? "Desativar" : "Publicar"}
+                  >
                     <i className="bi bi-upload" />
                   </button>
                 </div>
@@ -123,26 +155,34 @@ export default function CuponsPage() {
 
               <div className="linha">
                 <span>Tipo</span>
-                <strong>{c.tipo_nome} ({c.tipo_codigo})</strong>
+                <strong>
+                  {c.tipo_nome} ({c.tipo_codigo})
+                </strong>
               </div>
 
               <div className="linha">
                 <span>Desconto</span>
                 <strong>
-                  {c.tipo_codigo === "frete" ? "Frete Grátis" :
-                  c.tipo_codigo === "percentual" ? `${Number(c.desconto || 0)}%` :
-                  `R$ ${Number(c.desconto || 0).toFixed(2)}`}
+                  {c.tipo_codigo === "frete"
+                    ? "Frete Grátis"
+                    : c.tipo_codigo === "percentual"
+                    ? `${Number(c.desconto || 0)}%`
+                    : `R$ ${Number(c.desconto || 0).toFixed(2)}`}
                 </strong>
               </div>
 
               <div className="linha">
                 <span>Uso</span>
-                <strong>{c.usado} / {c.limite_uso ?? "∞"}</strong>
+                <strong>
+                  {c.usado} / {c.limite_uso ?? "∞"}
+                </strong>
               </div>
 
               <div className="linha">
                 <span>Validade</span>
-                <strong>{c.inicio} → {c.expiracao}</strong>
+                <strong>
+                  {c.inicio} → {c.expiracao}
+                </strong>
               </div>
             </div>
           ))}
