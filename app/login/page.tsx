@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ToastContainer, toast } from "react-toastify";
+import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { FaUser, FaLock, FaKey, FaEnvelope, FaPhone } from "react-icons/fa";
 import { useLoginConfig } from "@/hooks/useLoginConfig";
@@ -28,11 +28,6 @@ export default function LoginPage() {
   } = useLoginConfig();
 
   const handleCadastro = async () => {
-    if (!nome || !email || !senha) {
-      toast.error("Nome, email e senha são obrigatórios.");
-      return;
-    }
-
     try {
       const res = await api.post("/usuarios", {
         nome,
@@ -43,30 +38,26 @@ export default function LoginPage() {
       });
 
       if (res.status === 201 || res.status === 200) {
-        toast.success("Usuário criado com sucesso!");
+        alert("Usuário criado com sucesso!");
         setStep("login");
-        setNome("");
-        setEmail("");
-        setSenha("");
-        setTelefone("");
-        setCpf("");
       } else {
-        toast.error(res.data.mensagem || "Erro ao criar usuário.");
+        alert(res.data.mensagem || "Erro ao criar usuário.");
       }
     } catch (err: any) {
       console.error(err);
-      toast.error(err.response?.data?.mensagem || "Erro de conexão.");
+      alert(err.response?.data?.mensagem || "Erro de conexão.");
     }
   };
 
-  if (loading) return <p className="text-white text-center mt-5">Carregando...</p>;
+  if (loading)
+    return <p className="text-white text-center mt-5">Carregando...</p>;
 
   return (
     <>
       <ToastContainer position="top-right" autoClose={4000} />
 
       <div className="login-bg">
-        {/* ================== TELA INICIAL ================== */}
+        {/* PASSO INICIAL */}
         {step === "inicio" && (
           <div className="login-container">
             <img src={config?.logo} alt="Logo" className="logo-login" />
@@ -81,10 +72,13 @@ export default function LoginPage() {
             >
               Entrar
             </button>
+            <button className="voltar" onClick={() => setStep("cadastro")}>
+              Criar conta
+            </button>
           </div>
         )}
 
-        {/* ================== LOGIN ================== */}
+        {/* LOGIN */}
         {step === "login" && (
           <div className="login-container">
             <img src={config?.logo} alt="Logo" className="logo-login" />
@@ -92,7 +86,9 @@ export default function LoginPage() {
             {errorMsg && <p className="error-msg">{errorMsg}</p>}
 
             <div className="input-wrapper">
-              <div className="input-icon"><FaUser /></div>
+              <div className="input-icon">
+                <FaUser />
+              </div>
               <input
                 type="text"
                 placeholder="Usuário ou Email"
@@ -102,7 +98,9 @@ export default function LoginPage() {
             </div>
 
             <div className="input-wrapper">
-              <div className="input-icon"><FaLock /></div>
+              <div className="input-icon">
+                <FaLock />
+              </div>
               <input
                 type="password"
                 placeholder="Senha"
@@ -128,7 +126,7 @@ export default function LoginPage() {
           </div>
         )}
 
-        {/* ================== PIN ================== */}
+        {/* PIN */}
         {step === "pin" && (
           <div className="login-container">
             <img src={config?.logo} alt="Logo" className="logo-login" />
@@ -136,7 +134,9 @@ export default function LoginPage() {
             {errorMsg && <p className="error-msg">{errorMsg}</p>}
 
             <div className="input-wrapper">
-              <div className="input-icon"><FaKey /></div>
+              <div className="input-icon">
+                <FaKey />
+              </div>
               <input
                 type="password"
                 maxLength={6}
@@ -160,14 +160,17 @@ export default function LoginPage() {
           </div>
         )}
 
-        {/* ================== CADASTRO ================== */}
+        {/* CADASTRO */}
         {step === "cadastro" && (
           <div className="login-container">
             <img src={config?.logo} alt="Logo" className="logo-login" />
             <h1>Criar Conta</h1>
+            {errorMsg && <p className="error-msg">{errorMsg}</p>}
 
             <div className="input-wrapper">
-              <div className="input-icon"><FaUser /></div>
+              <div className="input-icon">
+                <FaUser />
+              </div>
               <input
                 type="text"
                 placeholder="Nome completo"
@@ -177,7 +180,9 @@ export default function LoginPage() {
             </div>
 
             <div className="input-wrapper">
-              <div className="input-icon"><FaEnvelope /></div>
+              <div className="input-icon">
+                <FaEnvelope />
+              </div>
               <input
                 type="email"
                 placeholder="Email"
@@ -187,7 +192,9 @@ export default function LoginPage() {
             </div>
 
             <div className="input-wrapper">
-              <div className="input-icon"><FaLock /></div>
+              <div className="input-icon">
+                <FaLock />
+              </div>
               <input
                 type="password"
                 placeholder="Senha"
@@ -197,7 +204,9 @@ export default function LoginPage() {
             </div>
 
             <div className="input-wrapper">
-              <div className="input-icon"><FaPhone /></div>
+              <div className="input-icon">
+                <FaPhone />
+              </div>
               <input
                 type="text"
                 placeholder="Telefone"
@@ -207,7 +216,9 @@ export default function LoginPage() {
             </div>
 
             <div className="input-wrapper">
-              <div className="input-icon"><FaKey /></div>
+              <div className="input-icon">
+                <FaKey />
+              </div>
               <input
                 type="text"
                 placeholder="CPF"
@@ -216,7 +227,11 @@ export default function LoginPage() {
               />
             </div>
 
-            <button className="btn-primary" onClick={handleCadastro}>
+            <button
+              className="btn-primary"
+              onClick={handleCadastro}
+              disabled={loadingBtn}
+            >
               {loadingBtn ? <div className="spinner"></div> : "Criar Conta"}
             </button>
 
@@ -227,9 +242,11 @@ export default function LoginPage() {
         )}
       </div>
 
-      {/* ================== CSS ================== */}
       <style jsx>{`
-        html, body, .login-bg {
+        /* ====== MESMO CSS QUE VOCÊ JÁ TINHA ====== */
+        html,
+        body,
+        .login-bg {
           margin: 0;
           padding: 0;
           height: 100vh;
@@ -250,16 +267,30 @@ export default function LoginPage() {
           left: -50%;
           width: 200%;
           height: 200%;
-          background: radial-gradient(circle at 25% 25%, rgba(255,90,95,0.06), transparent 70%),
-                      radial-gradient(circle at 75% 75%, rgba(255,190,0,0.04), transparent 70%);
+          background: radial-gradient(
+              circle at 25% 25%,
+              rgba(255, 90, 95, 0.06),
+              transparent 70%
+            ),
+            radial-gradient(
+              circle at 75% 75%,
+              rgba(255, 190, 0, 0.04),
+              transparent 70%
+            );
           animation: animateBackground 25s linear infinite;
           z-index: 0;
         }
 
         @keyframes animateBackground {
-          0% { transform: rotate(0deg) scale(1); }
-          50% { transform: rotate(180deg) scale(1.05); }
-          100% { transform: rotate(360deg) scale(1); }
+          0% {
+            transform: rotate(0deg) scale(1);
+          }
+          50% {
+            transform: rotate(180deg) scale(1.05);
+          }
+          100% {
+            transform: rotate(360deg) scale(1);
+          }
         }
 
         .login-container {
@@ -275,12 +306,16 @@ export default function LoginPage() {
           color: #fff;
           backdrop-filter: blur(22px);
           border-radius: 22px;
-          box-shadow: 0 10px 40px rgba(0,0,0,0.7);
-          background: rgba(0,0,0,0.35);
+          box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7);
+          background: rgba(0, 0, 0, 0.35);
           animation: fadeIn 0.8s ease-in-out;
         }
 
-        .logo-login { width: 140px; margin-bottom: 25px; animation: fadeInDown 1s ease-out; }
+        .logo-login {
+          width: 140px;
+          margin-bottom: 25px;
+          animation: fadeInDown 1s ease-out;
+        }
 
         h1 {
           font-size: 2rem;
@@ -295,7 +330,7 @@ export default function LoginPage() {
           width: 100%;
           display: flex;
           align-items: center;
-          background: rgba(255,255,255,0.05);
+          background: rgba(255, 255, 255, 0.05);
           border: 2px solid #333;
           border-radius: 12px;
           padding: 0 12px;
@@ -303,9 +338,18 @@ export default function LoginPage() {
           transition: all 0.3s ease;
         }
 
-        .input-wrapper:focus-within { border-color: #6c63ff; background: rgba(255,255,255,0.12); }
+        .input-wrapper:focus-within {
+          border-color: #6c63ff;
+          background: rgba(255, 255, 255, 0.12);
+        }
 
-        .input-icon { color: #aaa; font-size: 1.2rem; margin-right: 10px; display: flex; align-items: center; }
+        .input-icon {
+          color: #aaa;
+          font-size: 1.2rem;
+          margin-right: 10px;
+          display: flex;
+          align-items: center;
+        }
 
         .input-wrapper input {
           flex: 1;
@@ -317,7 +361,9 @@ export default function LoginPage() {
           font-size: 1rem;
         }
 
-        .input-wrapper input::placeholder { color: #aaa; }
+        .input-wrapper input::placeholder {
+          color: #aaa;
+        }
 
         .btn-primary {
           width: 100%;
@@ -334,13 +380,16 @@ export default function LoginPage() {
           align-items: center;
           justify-content: center;
           margin-top: 10px;
-          box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+          box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
         }
 
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(0,0,0,0.6); }
+        .btn-primary:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 22px rgba(0, 0, 0, 0.6);
+        }
 
         .spinner {
-          border: 3px solid rgba(255,255,255,0.3);
+          border: 3px solid rgba(255, 255, 255, 0.3);
           border-top: 3px solid #fff;
           border-radius: 50%;
           width: 18px;
@@ -349,9 +398,15 @@ export default function LoginPage() {
           margin-right: 8px;
         }
 
-        .links { margin-top: 15px; display: flex; justify-content: space-between; width: 100%; }
+        .links {
+          margin-top: 15px;
+          display: flex;
+          justify-content: space-between;
+          width: 100%;
+        }
 
-        .links a, .voltar {
+        .links a,
+        .voltar {
           color: #aaa;
           font-size: 0.9rem;
           text-decoration: none;
@@ -360,9 +415,16 @@ export default function LoginPage() {
           border: none;
         }
 
-        .links a:hover, .voltar:hover { color: #fff; }
+        .links a:hover,
+        .voltar:hover {
+          color: #fff;
+        }
 
-        .error-msg { color: #ff6b6b; font-weight: 500; margin-bottom: 10px; }
+        .error-msg {
+          color: #ff6b6b;
+          font-weight: 500;
+          margin-bottom: 10px;
+        }
 
         .voltar {
           margin-top: 10px;
@@ -374,15 +436,53 @@ export default function LoginPage() {
           width: 100%;
         }
 
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes fadeInDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+        @keyframes fadeInDown {
+          from {
+            opacity: 0;
+            transform: translateY(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        @keyframes spin {
+          0% {
+            transform: rotate(0deg);
+          }
+          100% {
+            transform: rotate(360deg);
+          }
+        }
 
-        @media (max-width: 768px) { .login-container { padding: 40px 25px; } h1 { font-size: 1.8rem; } }
+        @media (max-width: 768px) {
+          .login-container {
+            padding: 40px 25px;
+          }
+          h1 {
+            font-size: 1.8rem;
+          }
+        }
         @media (max-width: 480px) {
-          .login-container { padding: 35px 20px; }
-          h1 { font-size: 1.6rem; }
-          .links { flex-direction: column; gap: 10px; align-items: center; }
+          .login-container {
+            padding: 35px 20px;
+          }
+          h1 {
+            font-size: 1.6rem;
+          }
+          .links {
+            flex-direction: column;
+            gap: 10px;
+            align-items: center;
+          }
         }
       `}</style>
     </>
