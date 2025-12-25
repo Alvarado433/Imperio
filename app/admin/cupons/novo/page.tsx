@@ -36,18 +36,6 @@ export default function NovoCupomPage() {
     console.log(`🟣 [CUPOM] ${msg}`, data ?? "");
 
   /* =========================
-     GERAR CÓDIGO
-  ========================= */
-  function gerarCodigo(prefixo = "PROMO") {
-    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-    let code = "";
-    for (let i = 0; i < 6; i++) {
-      code += chars[Math.floor(Math.random() * chars.length)];
-    }
-    return `${prefixo}-${code}`;
-  }
-
-  /* =========================
      TIPO SELECIONADO
   ========================= */
   const tipoSelecionado = tipos.find(
@@ -55,14 +43,26 @@ export default function NovoCupomPage() {
   );
 
   /* =========================
-     AUTO GERAR AO ABRIR
+     GERAR CÓDIGO
   ========================= */
-  useEffect(() => {
+  function gerarCodigo(tipo?: TipoCupom["codigo"]) {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    let random = "";
+
+    for (let i = 0; i < 6; i++) {
+      random += chars[Math.floor(Math.random() * chars.length)];
+    }
+
+    let prefixo = "PROMO";
+    if (tipo === "percentual") prefixo = "OFF";
+    if (tipo === "valor") prefixo = "SAVE";
+    if (tipo === "frete") prefixo = "FRETE";
+
     setForm((prev) => ({
       ...prev,
-      codigo: gerarCodigo(),
+      codigo: `${prefixo}-${random}`,
     }));
-  }, []);
+  }
 
   /* =========================
      CARREGAR TIPOS
@@ -74,40 +74,35 @@ export default function NovoCupomPage() {
         const res = await api.get("/admin/cupom/tipos", {
           withCredentials: true,
         });
-        log("Tipos recebidos", res.data);
+
         setTipos(res.data?.dados || []);
+        log("Tipos carregados", res.data?.dados);
       } catch (e) {
-        console.error("Erro tipos", e);
+        console.error("Erro ao carregar tipos", e);
       } finally {
         setLoadingTipos(false);
       }
     }
+
     carregarTipos();
+    gerarCodigo(); // 🔥 gera automaticamente ao abrir
   }, []);
 
   /* =========================
-     AJUSTE AUTOMÁTICO
+     AJUSTES AUTOMÁTICOS
   ========================= */
   useEffect(() => {
-    if (!tipoSelecionado) return;
+    if (tipoSelecionado) {
+      gerarCodigo(tipoSelecionado.codigo);
 
-    if (tipoSelecionado.codigo === "frete") {
-      setForm((p) => ({ ...p, desconto: "0" }));
+      if (tipoSelecionado.codigo === "frete") {
+        setForm((p) => ({ ...p, desconto: "0" }));
+      }
     }
-
-    // muda prefixo conforme tipo
-    const prefix =
-      tipoSelecionado.codigo === "frete"
-        ? "FRETE"
-        : tipoSelecionado.codigo === "valor"
-        ? "VALE"
-        : "PROMO";
-
-    setForm((p) => ({ ...p, codigo: gerarCodigo(prefix) }));
-  }, [tipoSelecionado]);
+  }, [form.tipo_id]);
 
   /* =========================
-     HANDLE CHANGE
+     CHANGE
   ========================= */
   function handleChange(
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -127,10 +122,8 @@ export default function NovoCupomPage() {
       desconto:
         tipoSelecionado?.codigo === "frete"
           ? 0
-          : parseFloat(form.desconto),
-      valor_minimo: form.valor_minimo
-        ? parseFloat(form.valor_minimo)
-        : 0,
+          : Number(form.desconto),
+      valor_minimo: Number(form.valor_minimo) || 0,
       limite_uso: form.limite_uso ? Number(form.limite_uso) : null,
       inicio: form.inicio || null,
       expiracao: form.expiracao || null,
@@ -159,27 +152,23 @@ export default function NovoCupomPage() {
      UI
   ========================= */
   return (
-    <div className="layout">
-      {/* FORM */}
+    <div className="wrapper">
       <div className="card">
         <h2>🎟 Criar Cupom</h2>
 
         <form onSubmit={salvar}>
-          <label>Código</label>
-          <div className="codigo-box">
-            <input name="codigo" value={form.codigo} readOnly />
-            <button type="button" onClick={() => setForm(p => ({
-              ...p,
-              codigo: gerarCodigo()
-            }))}>
-              🔄
+          <label>Código do cupom</label>
+          <div className="codigo">
+            <input value={form.codigo} disabled />
+            <button type="button" onClick={() => gerarCodigo(tipoSelecionado?.codigo)}>
+              🔄 Gerar novo
             </button>
           </div>
 
           <div className="grid">
             <div>
               <label>Tipo</label>
-              <select name="tipo_id" onChange={handleChange} required>
+              <select name="tipo_id" value={form.tipo_id} onChange={handleChange} required>
                 <option value="">Selecione</option>
                 {tipos.map((t) => (
                   <option key={t.id_tipo} value={t.id_tipo}>
@@ -197,6 +186,7 @@ export default function NovoCupomPage() {
                 step="0.01"
                 disabled={tipoSelecionado?.codigo === "frete"}
                 onChange={handleChange}
+                value={form.desconto}
               />
             </div>
 
@@ -225,14 +215,14 @@ export default function NovoCupomPage() {
           <input name="descricao" onChange={handleChange} />
 
           <button className="submit" disabled={salvando}>
-            {salvando ? "Salvando..." : "Criar Cupom"}
+            {salvando ? "Salvando..." : "Criar cupom"}
           </button>
         </form>
       </div>
 
-      {/* PREVIEW */}
+      {/* PREVIEW PREMIUM */}
       <div className="preview">
-        <span className="badge">{tipoSelecionado?.nome || "Cupom"}</span>
+        <span className="badge">{tipoSelecionado?.nome || "Tipo"}</span>
         <h1>
           {tipoSelecionado?.codigo === "percentual" && `${form.desconto || 0}%`}
           {tipoSelecionado?.codigo === "valor" && `R$ ${form.desconto || 0}`}
@@ -241,64 +231,60 @@ export default function NovoCupomPage() {
         <strong>{form.codigo}</strong>
         <p>{form.descricao || "Descrição do cupom"}</p>
         <small>
-          Válido de {form.inicio || "--"} até {form.expiracao || "--"}
+          Válido: {form.inicio || "--"} até {form.expiracao || "--"}
+        </small>
+        <small>
+          Mínimo R$ {form.valor_minimo || 0} • Limite {form.limite_uso || "∞"}
         </small>
       </div>
 
       <style jsx>{`
-        .layout {
+        .wrapper {
           display: grid;
           grid-template-columns: 2fr 1fr;
-          gap: 28px;
+          gap: 32px;
           padding: 40px;
         }
-        .card, .preview {
-          background: #fff;
-          border-radius: 18px;
-          padding: 28px;
-          box-shadow: 0 20px 50px rgba(0,0,0,.08);
-        }
+        .card,
         .preview {
-          background: linear-gradient(135deg,#2563eb,#1e40af);
-          color: #fff;
-          text-align: center;
+          background: #fff;
+          padding: 28px;
+          border-radius: 20px;
+          box-shadow: 0 20px 50px rgba(0, 0, 0, 0.1);
         }
-        .badge {
-          background: rgba(255,255,255,.2);
-          padding: 6px 14px;
-          border-radius: 999px;
-          font-size: 13px;
-        }
-        h1 {
-          font-size: 48px;
-          margin: 20px 0;
-        }
-        .codigo-box {
+        .codigo {
           display: flex;
           gap: 8px;
         }
+        .codigo input {
+          flex: 1;
+          background: #f3f4f6;
+        }
         .grid {
           display: grid;
-          grid-template-columns: repeat(2,1fr);
-          gap: 12px;
-        }
-        input, select {
-          width: 100%;
-          padding: 12px;
-          border-radius: 10px;
-          border: 1px solid #ddd;
-        }
-        button {
-          background: #2563eb;
-          color: #fff;
-          border: none;
-          padding: 10px 16px;
-          border-radius: 10px;
-          cursor: pointer;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 14px;
         }
         .submit {
           margin-top: 20px;
           width: 100%;
+          padding: 14px;
+          font-weight: bold;
+        }
+        .preview {
+          text-align: center;
+          background: linear-gradient(135deg, #2563eb, #1e40af);
+          color: #fff;
+        }
+        .badge {
+          background: rgba(255,255,255,.2);
+          padding: 6px 12px;
+          border-radius: 999px;
+          font-size: 12px;
+        }
+        .preview h1 {
+          font-size: 48px;
+          margin: 12px 0;
         }
       `}</style>
     </div>
