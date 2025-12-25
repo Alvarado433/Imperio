@@ -7,14 +7,15 @@ import api from "@/Api/conectar";
 interface TipoCupom {
   id_tipo: number;
   nome: string;
-  codigo: string; // percentual | valor | frete
+  codigo: "percentual" | "valor" | "frete";
 }
 
 export default function NovoCupomPage() {
   const router = useRouter();
 
   const [tipos, setTipos] = useState<TipoCupom[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loadingTipos, setLoadingTipos] = useState(true);
+  const [salvando, setSalvando] = useState(false);
 
   const [form, setForm] = useState({
     codigo: "",
@@ -28,12 +29,17 @@ export default function NovoCupomPage() {
     statusid: 1,
   });
 
+  /* =========================
+     TIPO SELECIONADO
+  ========================= */
   const tipoSelecionado = tipos.find(
     (t) => String(t.id_tipo) === String(form.tipo_id)
   );
 
-  /* 🔹 GERAR CÓDIGO AUTOMÁTICO */
-  function gerarCodigo(prefixo = "CUPOM") {
+  /* =========================
+     GERAR CÓDIGO
+  ========================= */
+  function gerarCodigo(prefixo = "PROMO") {
     const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     let codigo = "";
 
@@ -41,44 +47,64 @@ export default function NovoCupomPage() {
       codigo += chars[Math.floor(Math.random() * chars.length)];
     }
 
-    return `${prefixo}-${codigo}`;
+    setForm((prev) => ({
+      ...prev,
+      codigo: `${prefixo}-${codigo}`,
+    }));
   }
 
-  /* 🔹 CARREGAR TIPOS */
+  /* =========================
+     CARREGAR TIPOS (ROTA CERTA)
+  ========================= */
   useEffect(() => {
     async function carregarTipos() {
       try {
-        const res = await api.get("/admin/cupons/tipos", {
+        const res = await api.get("/admin/cupom/tipos", {
           withCredentials: true,
         });
 
-        setTipos(Array.isArray(res.data?.dados) ? res.data.dados : []);
-      } catch {
+        if (Array.isArray(res.data?.dados)) {
+          setTipos(res.data.dados);
+        } else {
+          setTipos([]);
+        }
+      } catch (error) {
+        console.error("Erro ao carregar tipos", error);
         setTipos([]);
+      } finally {
+        setLoadingTipos(false);
       }
     }
 
     carregarTipos();
   }, []);
 
-  /* 🔹 AJUSTAR DESCONTO AUTOMATICAMENTE */
+  /* =========================
+     AJUSTAR DESCONTO AUTOMÁTICO
+  ========================= */
   useEffect(() => {
     if (tipoSelecionado?.codigo === "frete") {
       setForm((prev) => ({ ...prev, desconto: "0" }));
     }
   }, [tipoSelecionado]);
 
+  /* =========================
+     HANDLE CHANGE
+  ========================= */
   function handleChange(
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) {
     setForm({ ...form, [e.target.name]: e.target.value });
   }
 
+  /* =========================
+     SALVAR CUPOM
+  ========================= */
   async function salvar(e: React.FormEvent) {
     e.preventDefault();
 
     if (!form.codigo || !form.tipo_id) {
-      alert("Preencha código e tipo");
+      alert("Preencha código e tipo do cupom");
       return;
     }
 
@@ -90,7 +116,7 @@ export default function NovoCupomPage() {
       return;
     }
 
-    setLoading(true);
+    setSalvando(true);
 
     try {
       await api.post("/admin/cupons/criar", form, {
@@ -99,134 +125,137 @@ export default function NovoCupomPage() {
 
       alert("Cupom criado com sucesso!");
       router.push("/admin/cupons");
-    } catch {
+    } catch (error) {
+      console.error(error);
       alert("Erro ao criar cupom");
     } finally {
-      setLoading(false);
+      setSalvando(false);
     }
   }
 
+  /* =========================
+     UI
+  ========================= */
   return (
     <div className="cupom-wrapper">
       <div className="cupom-card">
         <h3>🎟 Criar Cupom</h3>
 
-        <form onSubmit={salvar}>
-          {/* CÓDIGO */}
-          <label>Código</label>
-          <div className="codigo-box">
+        {loadingTipos ? (
+          <p className="loading">Carregando tipos de cupom...</p>
+        ) : (
+          <form onSubmit={salvar}>
+            {/* CÓDIGO */}
+            <label>Código do cupom</label>
+            <div className="codigo-box">
+              <input
+                name="codigo"
+                value={form.codigo}
+                placeholder="EX: PROMO10"
+                onChange={handleChange}
+                required
+              />
+              <button type="button" onClick={() => gerarCodigo()}>
+                Gerar
+              </button>
+            </div>
+
+            {/* GRID */}
+            <div className="grid">
+              <div>
+                <label>Tipo de cupom</label>
+                <select
+                  name="tipo_id"
+                  value={form.tipo_id}
+                  onChange={handleChange}
+                  required
+                >
+                  <option value="">Selecione</option>
+                  {tipos.map((t) => (
+                    <option key={t.id_tipo} value={t.id_tipo}>
+                      {t.nome}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label>
+                  Desconto{" "}
+                  {tipoSelecionado?.codigo === "percentual" && "(%)"}
+                  {tipoSelecionado?.codigo === "valor" && "(R$)"}
+                  {tipoSelecionado?.codigo === "frete" && "(Frete grátis)"}
+                </label>
+                <input
+                  name="desconto"
+                  type="number"
+                  step="0.01"
+                  disabled={tipoSelecionado?.codigo === "frete"}
+                  value={form.desconto}
+                  onChange={handleChange}
+                />
+              </div>
+
+              <div>
+                <label>Valor mínimo</label>
+                <input
+                  name="valor_minimo"
+                  type="number"
+                  step="0.01"
+                  onChange={handleChange}
+                />
+              </div>
+
+              <div>
+                <label>Limite de uso</label>
+                <input
+                  name="limite_uso"
+                  type="number"
+                  onChange={handleChange}
+                />
+              </div>
+
+              <div>
+                <label>Início</label>
+                <input
+                  name="inicio"
+                  type="date"
+                  required
+                  onChange={handleChange}
+                />
+              </div>
+
+              <div>
+                <label>Expiração</label>
+                <input
+                  name="expiracao"
+                  type="date"
+                  required
+                  onChange={handleChange}
+                />
+              </div>
+            </div>
+
+            <label>Descrição</label>
             <input
-              name="codigo"
-              value={form.codigo}
-              placeholder="EX: PROMO10"
+              name="descricao"
+              placeholder="Ex: Cupom de boas-vindas"
               onChange={handleChange}
-              required
             />
-            <button
-              type="button"
-              className="gerar-btn"
-              onClick={() =>
-                setForm((p) => ({
-                  ...p,
-                  codigo: gerarCodigo("PROMO"),
-                }))
-              }
-            >
-              Gerar
-            </button>
-          </div>
 
-          {/* GRID */}
-          <div className="grid">
-            <div>
-              <label>Tipo de Cupom</label>
-              <select name="tipo_id" required onChange={handleChange}>
-                <option value="">Selecione</option>
-                {tipos.map((t) => (
-                  <option key={t.id_tipo} value={t.id_tipo}>
-                    {t.nome}
-                  </option>
-                ))}
-              </select>
+            <div className="actions">
+              <button type="button" onClick={() => router.back()}>
+                Cancelar
+              </button>
+              <button type="submit" disabled={salvando}>
+                {salvando ? "Salvando..." : "Criar cupom"}
+              </button>
             </div>
-
-            <div>
-              <label>
-                Desconto{" "}
-                {tipoSelecionado?.codigo === "percentual" && "(%)"}
-                {tipoSelecionado?.codigo === "valor" && "(R$)"}
-                {tipoSelecionado?.codigo === "frete" && "(Frete grátis)"}
-              </label>
-
-              <input
-                name="desconto"
-                type="number"
-                step="0.01"
-                disabled={tipoSelecionado?.codigo === "frete"}
-                value={form.desconto}
-                onChange={handleChange}
-              />
-            </div>
-
-            <div>
-              <label>Valor mínimo</label>
-              <input
-                name="valor_minimo"
-                type="number"
-                step="0.01"
-                onChange={handleChange}
-              />
-            </div>
-
-            <div>
-              <label>Limite de uso</label>
-              <input
-                name="limite_uso"
-                type="number"
-                onChange={handleChange}
-              />
-            </div>
-
-            <div>
-              <label>Início</label>
-              <input
-                name="inicio"
-                type="date"
-                required
-                onChange={handleChange}
-              />
-            </div>
-
-            <div>
-              <label>Expiração</label>
-              <input
-                name="expiracao"
-                type="date"
-                required
-                onChange={handleChange}
-              />
-            </div>
-          </div>
-
-          <label>Descrição</label>
-          <input
-            name="descricao"
-            placeholder="Ex: Cupom de boas-vindas"
-            onChange={handleChange}
-          />
-
-          <div className="actions">
-            <button type="button" onClick={() => router.back()}>
-              Cancelar
-            </button>
-            <button type="submit" disabled={loading}>
-              {loading ? "Salvando..." : "Criar Cupom"}
-            </button>
-          </div>
-        </form>
+          </form>
+        )}
       </div>
 
-      {/* 🎨 CSS GLOBAL */}
+      {/* ================= CSS ================= */}
       <style jsx global>{`
         .cupom-wrapper {
           display: flex;
@@ -236,15 +265,15 @@ export default function NovoCupomPage() {
 
         .cupom-card {
           background: #fff;
-          padding: 32px;
-          border-radius: 18px;
-          max-width: 900px;
+          padding: 36px;
+          border-radius: 20px;
+          max-width: 960px;
           width: 100%;
-          box-shadow: 0 20px 50px rgba(0, 0, 0, 0.08);
+          box-shadow: 0 25px 60px rgba(0, 0, 0, 0.08);
         }
 
         h3 {
-          margin-bottom: 24px;
+          margin-bottom: 28px;
           font-weight: 700;
         }
 
@@ -264,16 +293,20 @@ export default function NovoCupomPage() {
           margin-bottom: 16px;
         }
 
+        input:disabled {
+          background: #f3f4f6;
+        }
+
         .codigo-box {
           display: flex;
           gap: 10px;
           margin-bottom: 16px;
         }
 
-        .gerar-btn {
+        .codigo-box button {
           background: #2563eb;
           color: #fff;
-          padding: 0 20px;
+          padding: 0 22px;
           border-radius: 10px;
           border: none;
           font-weight: 600;
@@ -290,29 +323,34 @@ export default function NovoCupomPage() {
           display: flex;
           justify-content: flex-end;
           gap: 12px;
-          margin-top: 20px;
+          margin-top: 24px;
         }
 
-        button {
-          padding: 12px 22px;
+        .actions button {
+          padding: 12px 24px;
           border-radius: 10px;
           border: none;
           font-weight: 600;
           cursor: pointer;
         }
 
-        button:first-child {
+        .actions button:first-child {
           background: #e5e7eb;
         }
 
-        button:last-child {
+        .actions button:last-child {
           background: #16a34a;
           color: #fff;
         }
 
-        button:disabled {
+        .actions button:disabled {
           opacity: 0.6;
           cursor: not-allowed;
+        }
+
+        .loading {
+          padding: 20px;
+          color: #6b7280;
         }
       `}</style>
     </div>
