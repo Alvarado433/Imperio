@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from "react";
-import api from "@/Api/conectar"; // sua instância axios/fetch
+import api from "@/Api/conectar";
 import Link from "next/link";
 
 interface CarrinhoItem {
@@ -10,12 +10,13 @@ interface CarrinhoItem {
   nome_produto: string;
   imagem: string;
   quantidade: number;
-  preco_unitario: number;
+  preco_unitario: number | string | null;
 }
 
 interface Carrinho {
   id_carrinho: number;
   usuario_id: number;
+  criado: string;
   itens: CarrinhoItem[];
 }
 
@@ -65,15 +66,23 @@ export default function CarrinhosPage() {
               <tr key={c.id_carrinho} className="text-center align-top">
                 <td className="border p-2">{c.id_carrinho}</td>
                 <td className="border p-2">{c.usuario_id}</td>
-                <td className="border p-2">{c.itens?.reduce((acc, item) => acc + item.quantidade, 0) || 0}</td>
-                <td className="border p-2">{new Date().toLocaleString()}</td>
+                <td className="border p-2">
+                  {c.itens?.reduce((acc, item) => acc + item.quantidade, 0) || 0}
+                </td>
+                <td className="border p-2">{new Date(c.criado).toLocaleString()}</td>
                 <td className="border p-2 text-left">
                   {c.itens?.map(item => (
                     <div key={item.id_item} className="flex items-center gap-2 mb-1">
-                      <img src={`/public/${item.imagem}`} alt={item.nome_produto} className="w-10 h-10 object-cover"/>
+                      <img
+                        src={item.imagem ? `/public/${item.imagem}` : "/placeholder.png"}
+                        alt={item.nome_produto}
+                        className="w-10 h-10 object-cover"
+                      />
                       <div>
                         <p className="text-sm font-semibold">{item.nome_produto}</p>
-                        <p className="text-xs">Qtd: {item.quantidade} - R$ {item.preco_unitario.toFixed(2)}</p>
+                        <p className="text-xs">
+                          Qtd: {item.quantidade} - R$ {(Number(item.preco_unitario) || 0).toFixed(2)}
+                        </p>
                       </div>
                     </div>
                   ))}
