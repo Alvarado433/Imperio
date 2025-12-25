@@ -8,7 +8,7 @@ interface CarrinhoItem {
   id_item: number;
   produto_id: number;
   nome_produto: string;
-  imagem: string;
+  imagem: string | null;
   quantidade: number;
   preco_unitario: number | string | null;
 }
@@ -24,6 +24,12 @@ export default function CarrinhosPage() {
   const [carrinhos, setCarrinhos] = useState<Carrinho[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Função helper para formatar preço
+  const formatPreco = (preco: number | string | null) => {
+    const valor = Number(preco);
+    return isNaN(valor) ? '0.00' : valor.toFixed(2);
+  };
 
   useEffect(() => {
     const fetchCarrinhos = async () => {
@@ -81,7 +87,7 @@ export default function CarrinhosPage() {
                       <div>
                         <p className="text-sm font-semibold">{item.nome_produto}</p>
                         <p className="text-xs">
-                          Qtd: {item.quantidade} - R$ {(Number(item.preco_unitario) || 0).toFixed(2)}
+                          Qtd: {item.quantidade} - R$ {formatPreco(item.preco_unitario)}
                         </p>
                       </div>
                     </div>
