@@ -4,7 +4,7 @@ import api from "@/Api/conectar";
 import { toast } from "react-toastify";
 import { useRouter } from "next/navigation";
 
-type Step = "inicio" | "login" | "pin";
+type Step = "inicio" | "login" | "pin" | "cadastro";
 
 export const useLoginConfig = () => {
   const router = useRouter();

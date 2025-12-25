@@ -3,16 +3,21 @@
 import { useState } from "react";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { FaUser, FaLock, FaKey } from "react-icons/fa";
+import { FaUser, FaLock, FaKey, FaEnvelope, FaPhone } from "react-icons/fa";
 import { useLoginConfig } from "@/hooks/useLoginConfig";
 
+
+
 export default function LoginPage() {
-  // Inputs locais
+  
   const [usuario, setUsuario] = useState("");
   const [senha, setSenha] = useState("");
   const [pin, setPin] = useState("");
+  const [nome, setNome] = useState("");
+  const [email, setEmail] = useState("");
+  const [telefone, setTelefone] = useState("");
+  const [cpf, setCpf] = useState("");
 
-  // Hook customizado com toda lógica
   const {
     config,
     loading,
@@ -23,6 +28,27 @@ export default function LoginPage() {
     handleLogin,
     handleValidarPin,
   } = useLoginConfig();
+
+  const handleCadastro = async () => {
+    try {
+      // Exemplo de envio para a rota /usuarios
+      const res = await fetch("/usuarios", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nome, email, senha, telefone, cpf }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert("Usuário criado com sucesso!");
+        setStep("login");
+      } else {
+        alert(data.mensagem || "Erro ao criar usuário.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Erro de conexão.");
+    }
+  };
 
   if (loading)
     return <p className="text-white text-center mt-5">Carregando...</p>;
@@ -47,6 +73,12 @@ export default function LoginPage() {
             >
               Entrar
             </button>
+            <button
+              className="voltar"
+              onClick={() => setStep("cadastro")}
+            >
+              Criar conta
+            </button>
           </div>
         )}
 
@@ -58,9 +90,7 @@ export default function LoginPage() {
             {errorMsg && <p className="error-msg">{errorMsg}</p>}
 
             <div className="input-wrapper">
-              <div className="input-icon">
-                <FaUser />
-              </div>
+              <div className="input-icon"><FaUser /></div>
               <input
                 type="text"
                 placeholder="Usuário ou Email"
@@ -70,9 +100,7 @@ export default function LoginPage() {
             </div>
 
             <div className="input-wrapper">
-              <div className="input-icon">
-                <FaLock />
-              </div>
+              <div className="input-icon"><FaLock /></div>
               <input
                 type="password"
                 placeholder="Senha"
@@ -91,7 +119,12 @@ export default function LoginPage() {
 
             <div className="links">
               <a href="#">Esqueci minha senha</a>
-              <a href="/criarconta">Criar conta</a>
+              <button
+                className="voltar"
+                onClick={() => setStep("cadastro")}
+              >
+                Criar conta
+              </button>
             </div>
           </div>
         )}
@@ -104,9 +137,7 @@ export default function LoginPage() {
             {errorMsg && <p className="error-msg">{errorMsg}</p>}
 
             <div className="input-wrapper">
-              <div className="input-icon">
-                <FaKey />
-              </div>
+              <div className="input-icon"><FaKey /></div>
               <input
                 type="password"
                 maxLength={6}
@@ -129,9 +160,81 @@ export default function LoginPage() {
             </button>
           </div>
         )}
+
+        {/* CADASTRO */}
+        {step === "cadastro" && (
+          <div className="login-container">
+            <img src={config?.logo} alt="Logo" className="logo-login" />
+            <h1>Criar Conta</h1>
+            {errorMsg && <p className="error-msg">{errorMsg}</p>}
+
+            <div className="input-wrapper">
+              <div className="input-icon"><FaUser /></div>
+              <input
+                type="text"
+                placeholder="Nome completo"
+                value={nome}
+                onChange={(e) => setNome(e.target.value)}
+              />
+            </div>
+
+            <div className="input-wrapper">
+              <div className="input-icon"><FaEnvelope /></div>
+              <input
+                type="email"
+                placeholder="Email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+
+            <div className="input-wrapper">
+              <div className="input-icon"><FaLock /></div>
+              <input
+                type="password"
+                placeholder="Senha"
+                value={senha}
+                onChange={(e) => setSenha(e.target.value)}
+              />
+            </div>
+
+            <div className="input-wrapper">
+              <div className="input-icon"><FaPhone /></div>
+              <input
+                type="text"
+                placeholder="Telefone"
+                value={telefone}
+                onChange={(e) => setTelefone(e.target.value)}
+              />
+            </div>
+
+            <div className="input-wrapper">
+              <div className="input-icon"><FaKey /></div>
+              <input
+                type="text"
+                placeholder="CPF"
+                value={cpf}
+                onChange={(e) => setCpf(e.target.value)}
+              />
+            </div>
+
+            <button
+              className="btn-primary"
+              onClick={handleCadastro}
+              disabled={loadingBtn}
+            >
+              {loadingBtn ? <div className="spinner"></div> : "Criar Conta"}
+            </button>
+
+            <button className="voltar" onClick={() => setStep("login")}>
+              Voltar
+            </button>
+          </div>
+        )}
       </div>
 
       <style jsx>{`
+        /* ====== MESMO CSS QUE VOCÊ JÁ TINHA ====== */
         html,
         body,
         .login-bg {
@@ -214,12 +317,6 @@ export default function LoginPage() {
           -webkit-text-fill-color: transparent;
         }
 
-        .message {
-          color: #ccc;
-          margin-bottom: 25px;
-          font-size: 0.95rem;
-        }
-
         .input-wrapper {
           width: 100%;
           display: flex;
@@ -298,13 +395,19 @@ export default function LoginPage() {
           justify-content: space-between;
           width: 100%;
         }
-        .links a {
+
+        .links a,
+        .voltar {
           color: #aaa;
           font-size: 0.9rem;
           text-decoration: none;
           transition: all 0.2s ease;
+          background: none;
+          border: none;
         }
-        .links a:hover {
+
+        .links a:hover,
+        .voltar:hover {
           color: #fff;
         }
 
@@ -316,7 +419,6 @@ export default function LoginPage() {
 
         .voltar {
           margin-top: 10px;
-          background: none;
           border: 1px solid #fff;
           color: #fff;
           border-radius: 8px;
@@ -326,52 +428,26 @@ export default function LoginPage() {
         }
 
         @keyframes fadeIn {
-          from {
-            opacity: 0;
-          }
-          to {
-            opacity: 1;
-          }
+          from { opacity: 0; }
+          to { opacity: 1; }
         }
         @keyframes fadeInDown {
-          from {
-            opacity: 0;
-            transform: translateY(-20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
+          from { opacity: 0; transform: translateY(-20px); }
+          to { opacity: 1; transform: translateY(0); }
         }
         @keyframes spin {
-          0% {
-            transform: rotate(0deg);
-          }
-          100% {
-            transform: rotate(360deg);
-          }
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
         }
 
         @media (max-width: 768px) {
-          .login-container {
-            padding: 40px 25px;
-          }
-          h1 {
-            font-size: 1.8rem;
-          }
+          .login-container { padding: 40px 25px; }
+          h1 { font-size: 1.8rem; }
         }
         @media (max-width: 480px) {
-          .login-container {
-            padding: 35px 20px;
-          }
-          h1 {
-            font-size: 1.6rem;
-          }
-          .links {
-            flex-direction: column;
-            gap: 10px;
-            align-items: center;
-          }
+          .login-container { padding: 35px 20px; }
+          h1 { font-size: 1.6rem; }
+          .links { flex-direction: column; gap: 10px; align-items: center; }
         }
       `}</style>
     </>
