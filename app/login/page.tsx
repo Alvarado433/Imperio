@@ -5,11 +5,9 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { FaUser, FaLock, FaKey, FaEnvelope, FaPhone } from "react-icons/fa";
 import { useLoginConfig } from "@/hooks/useLoginConfig";
-
-
+import api from "@/Api/conectar";
 
 export default function LoginPage() {
-  
   const [usuario, setUsuario] = useState("");
   const [senha, setSenha] = useState("");
   const [pin, setPin] = useState("");
@@ -31,22 +29,23 @@ export default function LoginPage() {
 
   const handleCadastro = async () => {
     try {
-      // Exemplo de envio para a rota /usuarios
-      const res = await fetch("/usuarios", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nome, email, senha, telefone, cpf }),
+      const res = await api.post("/usuarios", {
+        nome,
+        email,
+        senha,
+        telefone,
+        cpf,
       });
-      const data = await res.json();
-      if (res.ok) {
+
+      if (res.status === 201 || res.status === 200) {
         alert("Usuário criado com sucesso!");
         setStep("login");
       } else {
-        alert(data.mensagem || "Erro ao criar usuário.");
+        alert(res.data.mensagem || "Erro ao criar usuário.");
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert("Erro de conexão.");
+      alert(err.response?.data?.mensagem || "Erro de conexão.");
     }
   };
 
@@ -73,10 +72,7 @@ export default function LoginPage() {
             >
               Entrar
             </button>
-            <button
-              className="voltar"
-              onClick={() => setStep("cadastro")}
-            >
+            <button className="voltar" onClick={() => setStep("cadastro")}>
               Criar conta
             </button>
           </div>
@@ -90,7 +86,9 @@ export default function LoginPage() {
             {errorMsg && <p className="error-msg">{errorMsg}</p>}
 
             <div className="input-wrapper">
-              <div className="input-icon"><FaUser /></div>
+              <div className="input-icon">
+                <FaUser />
+              </div>
               <input
                 type="text"
                 placeholder="Usuário ou Email"
@@ -100,7 +98,9 @@ export default function LoginPage() {
             </div>
 
             <div className="input-wrapper">
-              <div className="input-icon"><FaLock /></div>
+              <div className="input-icon">
+                <FaLock />
+              </div>
               <input
                 type="password"
                 placeholder="Senha"
@@ -119,10 +119,7 @@ export default function LoginPage() {
 
             <div className="links">
               <a href="#">Esqueci minha senha</a>
-              <button
-                className="voltar"
-                onClick={() => setStep("cadastro")}
-              >
+              <button className="voltar" onClick={() => setStep("cadastro")}>
                 Criar conta
               </button>
             </div>
@@ -137,7 +134,9 @@ export default function LoginPage() {
             {errorMsg && <p className="error-msg">{errorMsg}</p>}
 
             <div className="input-wrapper">
-              <div className="input-icon"><FaKey /></div>
+              <div className="input-icon">
+                <FaKey />
+              </div>
               <input
                 type="password"
                 maxLength={6}
@@ -169,7 +168,9 @@ export default function LoginPage() {
             {errorMsg && <p className="error-msg">{errorMsg}</p>}
 
             <div className="input-wrapper">
-              <div className="input-icon"><FaUser /></div>
+              <div className="input-icon">
+                <FaUser />
+              </div>
               <input
                 type="text"
                 placeholder="Nome completo"
@@ -179,7 +180,9 @@ export default function LoginPage() {
             </div>
 
             <div className="input-wrapper">
-              <div className="input-icon"><FaEnvelope /></div>
+              <div className="input-icon">
+                <FaEnvelope />
+              </div>
               <input
                 type="email"
                 placeholder="Email"
@@ -189,7 +192,9 @@ export default function LoginPage() {
             </div>
 
             <div className="input-wrapper">
-              <div className="input-icon"><FaLock /></div>
+              <div className="input-icon">
+                <FaLock />
+              </div>
               <input
                 type="password"
                 placeholder="Senha"
@@ -199,7 +204,9 @@ export default function LoginPage() {
             </div>
 
             <div className="input-wrapper">
-              <div className="input-icon"><FaPhone /></div>
+              <div className="input-icon">
+                <FaPhone />
+              </div>
               <input
                 type="text"
                 placeholder="Telefone"
@@ -209,7 +216,9 @@ export default function LoginPage() {
             </div>
 
             <div className="input-wrapper">
-              <div className="input-icon"><FaKey /></div>
+              <div className="input-icon">
+                <FaKey />
+              </div>
               <input
                 type="text"
                 placeholder="CPF"
@@ -428,26 +437,52 @@ export default function LoginPage() {
         }
 
         @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
         }
         @keyframes fadeInDown {
-          from { opacity: 0; transform: translateY(-20px); }
-          to { opacity: 1; transform: translateY(0); }
+          from {
+            opacity: 0;
+            transform: translateY(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
         @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
+          0% {
+            transform: rotate(0deg);
+          }
+          100% {
+            transform: rotate(360deg);
+          }
         }
 
         @media (max-width: 768px) {
-          .login-container { padding: 40px 25px; }
-          h1 { font-size: 1.8rem; }
+          .login-container {
+            padding: 40px 25px;
+          }
+          h1 {
+            font-size: 1.8rem;
+          }
         }
         @media (max-width: 480px) {
-          .login-container { padding: 35px 20px; }
-          h1 { font-size: 1.6rem; }
-          .links { flex-direction: column; gap: 10px; align-items: center; }
+          .login-container {
+            padding: 35px 20px;
+          }
+          h1 {
+            font-size: 1.6rem;
+          }
+          .links {
+            flex-direction: column;
+            gap: 10px;
+            align-items: center;
+          }
         }
       `}</style>
     </>
