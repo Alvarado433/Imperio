@@ -16,8 +16,12 @@ export default function CadastroProdutoPage() {
   const [slug, setSlug] = useState("");
   const [descricao, setDescricao] = useState("");
   const [preco, setPreco] = useState<number | "">("");
+  const [precoPromocional, setPrecoPromocional] = useState<number | "">("");
   const [estoque, setEstoque] = useState<number | "">("");
   const [ilimitado, setIlimitado] = useState(false);
+  const [modelo, setModelo] = useState("");
+  const [parcelamento, setParcelamento] = useState("");
+  const [sku, setSku] = useState("");
   const [statusList, setStatusList] = useState<Status[]>([]);
   const [statusSelecionado, setStatusSelecionado] = useState<Status | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -31,12 +35,10 @@ export default function CadastroProdutoPage() {
         const dados = res.data.dados || [];
         setStatusList(dados);
         setStatusSelecionado(dados[0] || null);
-        console.log("✅ Status carregados:", dados);
       } catch (err: any) {
-        console.error("❌ Erro ao carregar status:", err.response?.data || err.message || err);
+        console.error("Erro ao carregar status:", err.response?.data || err.message || err);
       }
     };
-
     carregarStatus();
   }, []);
 
@@ -51,23 +53,35 @@ export default function CadastroProdutoPage() {
         .replace(/\s+/g, "-")
         .replace(/[^\w\-]+/g, "")
     );
+
+    // Gera SKU automático: nome + timestamp
+    if (nome) {
+      const timestamp = Date.now();
+      const skuGenerated = nome
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toUpperCase()
+        .replace(/\s+/g, "-")
+        .replace(/[^\w\-]+/g, "")
+        .substring(0, 8) + "-" + timestamp.toString().slice(-5);
+      setSku(skuGenerated);
+    } else {
+      setSku("");
+    }
   }, [nome]);
 
-  // Upload de imagem e preview
   const handleImagemChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.[0]) {
       setPreview(URL.createObjectURL(e.target.files[0]));
     }
   };
 
-  // Alterna o status ao clicar
   const toggleStatus = () => {
     if (!statusSelecionado) return;
     const idx = statusList.findIndex(s => s.id_status === statusSelecionado.id_status);
     setStatusSelecionado(statusList[(idx + 1) % statusList.length]);
   };
 
-  // Calcula contraste da cor para texto
   const getContraste = (cor?: string) => {
     if (!cor) return "#000";
     const hex = cor.replace("#", "");
@@ -94,42 +108,29 @@ export default function CadastroProdutoPage() {
     formData.append("slug", slug);
     formData.append("descricao", descricao);
     formData.append("preco", preco.toString());
+    if (precoPromocional !== "") formData.append("preco_promocional", precoPromocional.toString());
     formData.append("estoque", estoque.toString());
     formData.append("ilimitado", ilimitado ? "1" : "0");
+    formData.append("modelo", modelo);
+    formData.append("parcelamento", parcelamento);
+    formData.append("sku", sku);
     formData.append("statusid", statusSelecionado.id_status.toString());
 
     const file = (document.getElementById("imagemUpload") as HTMLInputElement)?.files?.[0];
     if (file) formData.append("imagem", file);
 
     try {
-      console.log("🚀 Enviando dados para backend:", {
-        nome,
-        slug,
-        descricao,
-        preco,
-        estoque,
-        ilimitado,
-        statusid: statusSelecionado.id_status,
-        imagem: file?.name || null
-      });
-
       const response = await api.post("/admin/produto/criar", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data"
-        }
+        headers: { "Content-Type": "multipart/form-data" }
       });
-
-      console.log("✅ Resposta do backend:", response.data);
       toast.success("Produto cadastrado com sucesso!");
 
       // reset form
-      setNome(""); setSlug(""); setDescricao("");
-      setPreco(""); setEstoque(""); setPreview(null);
-      setIlimitado(false);
+      setNome(""); setSlug(""); setDescricao(""); setPreco(""); setPrecoPromocional("");
+      setEstoque(""); setIlimitado(false); setModelo(""); setParcelamento(""); setSku(""); setPreview(null);
       setStatusSelecionado(statusList[0] || null);
-
     } catch (err: any) {
-      console.error("❌ Erro ao criar produto:", err.response?.data || err.message || err);
+      console.error("Erro ao criar produto:", err.response?.data || err.message || err);
       toast.error("Erro ao criar produto, veja o console");
     } finally {
       setLoading(false);
@@ -139,7 +140,6 @@ export default function CadastroProdutoPage() {
   return (
     <div className="dashboard-bg container-fluid py-4">
       <ToastContainer />
-
       <h1 className="page-title">Cadastrar Produto</h1>
       <p className="page-subtitle">Informações básicas do produto</p>
 
@@ -166,19 +166,34 @@ export default function CadastroProdutoPage() {
                 <input className="form-control" value={slug} readOnly />
               </div>
 
-              <div className="col-12">
-                <label>Descrição</label>
-                <textarea rows={4} className="form-control" value={descricao} onChange={e => setDescricao(e.target.value)} />
-              </div>
-
               <div className="col-md-6">
                 <label>Preço</label>
                 <input type="number" className="form-control" value={preco} onChange={e => setPreco(Number(e.target.value))} />
               </div>
 
               <div className="col-md-6">
+                <label>Preço Promocional</label>
+                <input type="number" className="form-control" value={precoPromocional} onChange={e => setPrecoPromocional(Number(e.target.value))} />
+              </div>
+
+              <div className="col-md-6">
                 <label>Estoque</label>
                 <input type="number" disabled={ilimitado} className="form-control" value={estoque} onChange={e => setEstoque(Number(e.target.value))} />
+              </div>
+
+              <div className="col-md-6">
+                <label>Modelo</label>
+                <input type="text" className="form-control" value={modelo} onChange={e => setModelo(e.target.value)} />
+              </div>
+
+              <div className="col-md-6">
+                <label>Parcelamento</label>
+                <input type="text" className="form-control" value={parcelamento} onChange={e => setParcelamento(e.target.value)} />
+              </div>
+
+              <div className="col-md-6">
+                <label>SKU</label>
+                <input type="text" className="form-control" value={sku} readOnly />
               </div>
 
               <div className="col-12 d-flex align-items-center gap-2">
@@ -210,7 +225,6 @@ export default function CadastroProdutoPage() {
         </div>
       </div>
 
-      {/* ===== ESTILO ===== */}
       <style jsx global>{`
         .dashboard-bg { background: #f5f6fa; min-height: 100vh; }
         .page-title { font-weight: 700; color: #2c2f33; }
